@@ -24,7 +24,7 @@ export interface CertificateData {
 
 // IMPORTANT: Specify your hosted chromium pack URL
 // Using the official GitHub release for testing - User should host this on Vercel Blob or similar for production
-const CHROMIUM_PACK_URL = "https://github.com/Sparticuz/chromium/releases/download/v143.0.4/chromium-v143.0.4-pack.tar";
+const CHROMIUM_PACK_URL = "https://github.com/Sparticuz/chromium/releases/download/v143.0.4/chromium-v143.0.4-pack.x64.tar";
 
 /**
  * Generate Certificate PDF
