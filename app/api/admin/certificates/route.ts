@@ -10,6 +10,9 @@ import { generateQRCode } from '@/lib/qr';
 import { generateCertificatePDF } from '@/lib/pdf';
 import { uploadCertificatePDF, isCloudinaryConfigured } from '@/lib/cloudinary';
 
+// Force Node.js runtime (required for Puppeteer)
+export const runtime = 'nodejs';
+
 export async function POST(request: NextRequest) {
     logger.apiRequest('POST', '/api/admin/certificates');
     try {
