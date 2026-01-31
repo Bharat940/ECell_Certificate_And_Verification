@@ -114,7 +114,7 @@ export default function VerifyPage({ params }: VerifyPageProps) {
                             {/* Certificate Details */}
                             <div className="space-y-6 text-center">
                                 <h2 className="text-3xl font-bold text-white">
-                                    Certificate Verified ✓
+                                    Certificate Verified
                                 </h2>
 
                                 <div className="bg-slate-800/50 border border-slate-700/50 rounded-xl p-4 sm:p-6 space-y-4 text-left">

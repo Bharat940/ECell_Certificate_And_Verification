@@ -1,9 +1,11 @@
 /**
  * PDF Generation Utility
  * Converts HTML certificate templates to PDF using Puppeteer
+ * Optimized for serverless environments (Vercel, AWS Lambda)
  */
 
-import puppeteer from 'puppeteer';
+import puppeteer from 'puppeteer-core';
+import chromium from '@sparticuz/chromium';
 import fs from 'fs/promises';
 import path from 'path';
 import { logger } from './logger';
@@ -23,6 +25,40 @@ export interface CertificateData {
 }
 
 /**
+ * Get Chromium executable path
+ * Works in both local development and serverless environments
+ */
+async function getExecutablePath(): Promise<string> {
+    // In production (Vercel, AWS Lambda), use @sparticuz/chromium
+    if (process.env.NODE_ENV === 'production') {
+        return await chromium.executablePath();
+    }
+
+    // In development, try to use local Chrome/Chromium
+    // This will work if you have Chrome installed locally
+    const localChromePaths = [
+        'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe', // Windows
+        'C:\\Program Files (x86)\\Google\\Chrome\\Application\\chrome.exe', // Windows 32-bit
+        '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome', // macOS
+        '/usr/bin/google-chrome', // Linux
+        '/usr/bin/chromium-browser', // Linux Chromium
+    ];
+
+    // Try to find local Chrome
+    for (const chromePath of localChromePaths) {
+        try {
+            await fs.access(chromePath);
+            return chromePath;
+        } catch {
+            // Path doesn't exist, try next
+        }
+    }
+
+    // Fallback to @sparticuz/chromium even in development
+    return await chromium.executablePath();
+}
+
+/**
  * Generate a certificate PDF from HTML template
  * @param data - Certificate data to inject into template
  * @returns PDF as Buffer
@@ -33,7 +69,8 @@ export async function generateCertificatePDF(data: CertificateData): Promise<Buf
     try {
         logger.info('PDF', 'Starting PDF generation', {
             certificateNumber: data.certificateNumber,
-            template: data.templateName
+            template: data.templateName,
+            environment: process.env.NODE_ENV
         });
 
         // Read HTML template using template name
@@ -53,19 +90,30 @@ export async function generateCertificatePDF(data: CertificateData): Promise<Buf
             .replace(/{{organizerName}}/g, data.organizerName)
             .replace(/{{qrCodeDataUrl}}/g, data.qrCodeDataUrl);
 
-        // Launch headless browser with timeout
-        logger.info('PDF', 'Launching Puppeteer browser...');
+        // Get executable path (works in both dev and production)
+        const executablePath = await getExecutablePath();
+
+        logger.info('PDF', 'Launching Puppeteer browser...', {
+            executablePath: executablePath.substring(0, 50) + '...',
+            isProduction: process.env.NODE_ENV === 'production'
+        });
+
+        // Launch headless browser with serverless-optimized settings
         browser = await puppeteer.launch({
+            args: process.env.NODE_ENV === 'production'
+                ? chromium.args
+                : [
+                    '--no-sandbox',
+                    '--disable-setuid-sandbox',
+                    '--disable-dev-shm-usage',
+                    '--disable-gpu',
+                ],
+            defaultViewport: {
+                width: 1920,
+                height: 1080,
+            },
+            executablePath,
             headless: true,
-            timeout: 60000, // 60 second timeout for browser launch
-            args: [
-                '--no-sandbox',
-                '--disable-setuid-sandbox',
-                '--disable-dev-shm-usage',
-                '--disable-gpu',
-                '--disable-software-rasterizer',
-                '--disable-extensions',
-            ],
         });
 
         logger.info('PDF', 'Browser launched, creating page...');
@@ -79,6 +127,7 @@ export async function generateCertificatePDF(data: CertificateData): Promise<Buf
         });
 
         // Generate PDF
+        logger.info('PDF', 'Generating PDF...');
         const pdfBuffer = await page.pdf({
             format: 'A4',
             landscape: true,
@@ -102,13 +151,14 @@ export async function generateCertificatePDF(data: CertificateData): Promise<Buf
         logger.error('PDF', 'PDF generation failed', {
             error: error.message,
             stack: error.stack,
-            certificateNumber: data.certificateNumber
+            certificateNumber: data.certificateNumber,
+            environment: process.env.NODE_ENV
         });
 
         // Provide more specific error message
         if (error.message?.includes('timeout')) {
             throw new Error('PDF generation timed out. Please try again.');
-        } else if (error.message?.includes('browser')) {
+        } else if (error.message?.includes('Could not find Chrome') || error.message?.includes('browser')) {
             throw new Error('Failed to launch browser for PDF generation. Please contact administrator.');
         } else {
             throw new Error(`Failed to generate certificate PDF: ${error.message}`);
