@@ -1,11 +1,10 @@
 /**
- * PDF Generation Utility
- * Serverless-safe Puppeteer implementation
- * Works on Vercel / AWS Lambda
+ * PDF Generation Utility - VERCEL COMPATIBLE VERSION
+ * Uses @sparticuz/chromium-min with externally hosted chromium pack
  */
 
 import puppeteer, { type Browser } from "puppeteer-core";
-import chromium from "@sparticuz/chromium";
+import chromium from "@sparticuz/chromium-min";
 import fs from "fs/promises";
 import { logger } from "./logger";
 import { getTemplatePath } from "./templateUtils";
@@ -23,9 +22,12 @@ export interface CertificateData {
     templateName: string;
 }
 
+// IMPORTANT: Specify your hosted chromium pack URL
+// Using the official GitHub release for testing - User should host this on Vercel Blob or similar for production
+const CHROMIUM_PACK_URL = "https://github.com/Sparticuz/chromium/releases/download/v143.0.4/chromium-v143.0.4-pack.tar";
+
 /**
  * Generate Certificate PDF
- * Following @sparticuz/chromium official usage pattern
  */
 export async function generateCertificatePDF(
     data: CertificateData
@@ -49,7 +51,7 @@ export async function generateCertificatePDF(
             .replace(/{{eventStartDate}}/g, data.eventStartDate)
             .replace(/{{eventEndDate}}/g, data.eventEndDate)
             .replace(/{{eventDateRange}}/g, data.eventDateRange)
-            .replace(/{{eventDate}}/g, data.eventDateRange) // Backward compatibility
+            .replace(/{{eventDate}}/g, data.eventDateRange)
             .replace(/{{certificateNumber}}/g, data.certificateNumber)
             .replace(/{{issueDate}}/g, data.issueDate)
             .replace(/{{organizerName}}/g, data.organizerName)
@@ -57,15 +59,16 @@ export async function generateCertificatePDF(
 
         logger.info("PDF", "Launching Chromium...");
 
-        // CRITICAL: Disable WebGL for serverless (no GPU available)
+        // CRITICAL: Disable WebGL for serverless
         chromium.setGraphicsMode = false;
 
-        // Get executable path - this will extract binaries to /tmp
-        const executablePath = await chromium.executablePath();
+        // Get executable path - pass the URL to chromium pack
+        // This will download and extract to /tmp on first run
+        const executablePath = await chromium.executablePath(CHROMIUM_PACK_URL);
 
-        logger.info("PDF", "Chromium executable path", { executablePath });
+        logger.info("PDF", "Chromium binary extracted", { executablePath });
 
-        // Launch browser with optimized settings for serverless
+        // Launch browser
         browser = await puppeteer.launch({
             args: [
                 ...chromium.args,
@@ -99,12 +102,7 @@ export async function generateCertificatePDF(
             format: "A4",
             landscape: true,
             printBackground: true,
-            margin: {
-                top: 0,
-                right: 0,
-                bottom: 0,
-                left: 0,
-            },
+            margin: { top: 0, right: 0, bottom: 0, left: 0 },
             preferCSSPageSize: true,
         });
 
@@ -119,29 +117,17 @@ export async function generateCertificatePDF(
             error: error.message,
             stack: error.stack,
             certificateNumber: data.certificateNumber,
-            environment: process.env.NODE_ENV,
         });
 
-        // Provide specific error messages
         if (error.message?.includes("timeout")) {
             throw new Error("PDF generation timed out. Please try again.");
-        } else if (
-            error.message?.includes("Could not find Chrome") ||
-            error.message?.includes("browser") ||
-            error.message?.includes("does not exist")
-        ) {
-            throw new Error(
-                "Failed to launch browser for PDF generation. Binary files may not be properly deployed."
-            );
-        } else {
-            throw new Error(`Failed to generate certificate PDF: ${error.message}`);
         }
+        throw new Error(`Failed to generate certificate PDF: ${error.message}`);
     } finally {
         if (browser) {
             try {
-                // Close all pages first to prevent hanging
                 const pages = await browser.pages();
-                await Promise.all(pages.map(page => page.close()));
+                await Promise.all(pages.map(page => page.close().catch(() => { })));
                 await browser.close();
                 logger.info("PDF", "Browser closed successfully");
             } catch (closeError) {
