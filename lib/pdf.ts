@@ -57,24 +57,31 @@ export async function generateCertificatePDF(
 
         logger.info("PDF", "Launching Chromium...");
 
-        // Disable WebGL for better performance (not needed for PDFs)
+        // CRITICAL: Disable WebGL for serverless (no GPU available)
         chromium.setGraphicsMode = false;
 
-        // Launch browser using official @sparticuz/chromium pattern
-        // Reference: https://github.com/Sparticuz/chromium#usage
-        const viewport = {
-            deviceScaleFactor: 1,
-            hasTouch: false,
-            height: 1080,
-            isLandscape: true,
-            isMobile: false,
-            width: 1920,
-        };
+        // Get executable path - this will extract binaries to /tmp
+        const executablePath = await chromium.executablePath();
 
+        logger.info("PDF", "Chromium executable path", { executablePath });
+
+        // Launch browser with optimized settings for serverless
         browser = await puppeteer.launch({
-            args: puppeteer.defaultArgs({ args: chromium.args, headless: "shell" }),
-            defaultViewport: viewport,
-            executablePath: await chromium.executablePath(),
+            args: [
+                ...chromium.args,
+                '--disable-gpu',
+                '--disable-dev-shm-usage',
+                '--disable-setuid-sandbox',
+                '--no-sandbox',
+                '--single-process',
+                '--no-zygote',
+            ],
+            defaultViewport: {
+                width: 1920,
+                height: 1080,
+                deviceScaleFactor: 1,
+            },
+            executablePath: executablePath,
             headless: "shell",
         });
 
@@ -120,10 +127,11 @@ export async function generateCertificatePDF(
             throw new Error("PDF generation timed out. Please try again.");
         } else if (
             error.message?.includes("Could not find Chrome") ||
-            error.message?.includes("browser")
+            error.message?.includes("browser") ||
+            error.message?.includes("does not exist")
         ) {
             throw new Error(
-                "Failed to launch browser for PDF generation. Please contact administrator."
+                "Failed to launch browser for PDF generation. Binary files may not be properly deployed."
             );
         } else {
             throw new Error(`Failed to generate certificate PDF: ${error.message}`);
@@ -131,6 +139,9 @@ export async function generateCertificatePDF(
     } finally {
         if (browser) {
             try {
+                // Close all pages first to prevent hanging
+                const pages = await browser.pages();
+                await Promise.all(pages.map(page => page.close()));
                 await browser.close();
                 logger.info("PDF", "Browser closed successfully");
             } catch (closeError) {

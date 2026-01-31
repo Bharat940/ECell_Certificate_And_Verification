@@ -12,6 +12,8 @@ import { uploadCertificatePDF, isCloudinaryConfigured } from '@/lib/cloudinary';
 
 // Force Node.js runtime (required for Puppeteer)
 export const runtime = 'nodejs';
+export const maxDuration = 10; // Vercel Hobby plan limit (Pro allows up to 60s)
+export const dynamic = 'force-dynamic';
 
 export async function POST(request: NextRequest) {
     logger.apiRequest('POST', '/api/admin/certificates');
