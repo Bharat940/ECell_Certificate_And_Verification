@@ -16,7 +16,7 @@ export const maxDuration = 10; // Vercel Hobby plan limit (Pro allows up to 60s)
 export const dynamic = 'force-dynamic';
 
 export async function POST(request: NextRequest) {
-    logger.apiRequest('POST', '/api/admin/certificates');
+    logger.apiRequest('POST', '/api/admin/certificates', { context: '[MANUAL_CREATE]' });
     try {
         // Verify admin authentication
         await requireAdmin(request);
@@ -75,7 +75,7 @@ export async function POST(request: NextRequest) {
             );
         }
 
-        logger.info('CERT', 'Generating certificate', {
+        logger.info('CERT', '[MANUAL_CREATE] Generating certificate', {
             certificateNumber,
             participantName,
             eventId
@@ -133,6 +133,7 @@ export async function POST(request: NextRequest) {
         await certificate.populate('eventId');
 
         logger.apiSuccess('POST', '/api/admin/certificates', {
+            context: '[MANUAL_CREATE]',
             certificateNumber: certificate.certificateNumber,
             eventId
         });

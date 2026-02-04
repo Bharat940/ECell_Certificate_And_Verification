@@ -3,9 +3,10 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { ArrowLeft, Calendar, User, FileText, Trash2 } from 'lucide-react';
+import { ArrowLeft, Calendar, User, FileText, Trash2, Upload, FileDown, Search } from 'lucide-react';
 import toast from 'react-hot-toast';
-import { CertificateCard } from '@/components/CertificateCard';
+import { CertificateTable } from '@/components/CertificateTable';
+import { ImportCertificatesModal } from '@/components/ImportCertificatesModal';
 import { ConfirmDialog } from '@/components/ConfirmDialog';
 import { formatDateRange } from '@/lib/dateUtils';
 
@@ -48,6 +49,15 @@ export default function EventCertificatesPage({ params }: PageProps) {
     const [showBulkDeleteConfirm, setShowBulkDeleteConfirm] = useState(false);
     const [showDeleteAllConfirm, setShowDeleteAllConfirm] = useState(false);
     const [deleteAllConfirmText, setDeleteAllConfirmText] = useState('');
+    const [showImportModal, setShowImportModal] = useState(false);
+    const [isExporting, setIsExporting] = useState(false);
+    const [searchTerm, setSearchTerm] = useState('');
+
+    const filteredCertificates = certificates.filter(cert =>
+        cert.participantName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        cert.participantEmail?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        cert.certificateNumber.toLowerCase().includes(searchTerm.toLowerCase())
+    );
 
     const router = useRouter();
 
@@ -89,10 +99,6 @@ export default function EventCertificatesPage({ params }: PageProps) {
         }
     };
 
-    const copyToClipboard = (text: string) => {
-        navigator.clipboard.writeText(text);
-    };
-
     const handleDeleteCertificate = async () => {
         if (!deleteConfirmId) return;
 
@@ -130,11 +136,16 @@ export default function EventCertificatesPage({ params }: PageProps) {
     };
 
     const toggleSelectAll = () => {
-        if (selectedCertificates.size === certificates.length) {
-            setSelectedCertificates(new Set());
+        const allFilteredIds = filteredCertificates.map(c => c.id);
+        const allFilteredSelected = allFilteredIds.length > 0 && allFilteredIds.every(id => selectedCertificates.has(id));
+
+        const newSelection = new Set(selectedCertificates);
+        if (allFilteredSelected) {
+            allFilteredIds.forEach(id => newSelection.delete(id));
         } else {
-            setSelectedCertificates(new Set(certificates.map(c => c.id)));
+            allFilteredIds.forEach(id => newSelection.add(id));
         }
+        setSelectedCertificates(newSelection);
     };
 
     const handleBulkDelete = async () => {
@@ -176,11 +187,11 @@ export default function EventCertificatesPage({ params }: PageProps) {
     };
 
     const handleDeleteAll = async () => {
-        if (certificates.length === 0) return;
+        if (filteredCertificates.length === 0) return;
 
         setIsBulkDeleting(true);
         try {
-            const allIds = certificates.map(c => c.id);
+            const allIds = filteredCertificates.map(c => c.id);
             const response = await fetch('/api/admin/certificates/bulk-delete', {
                 method: 'DELETE',
                 headers: {
@@ -201,7 +212,12 @@ export default function EventCertificatesPage({ params }: PageProps) {
                     toast.error(`Failed to delete ${data.failed} certificate(s)`);
                 }
                 await fetchCertificates(eventId);
-                setSelectedCertificates(new Set());
+
+                // Clear deleted IDs from selection
+                const newSelection = new Set(selectedCertificates);
+                allIds.forEach(id => newSelection.delete(id));
+                setSelectedCertificates(newSelection);
+
                 setShowDeleteAllConfirm(false);
                 setDeleteAllConfirmText('');
             } else {
@@ -212,6 +228,44 @@ export default function EventCertificatesPage({ params }: PageProps) {
             toast.error('Failed to delete certificates');
         } finally {
             setIsBulkDeleting(false);
+        }
+    };
+
+    const handleExportSelected = async (format: 'csv' | 'xlsx') => {
+        const ids = selectedCertificates.size > 0
+            ? Array.from(selectedCertificates)
+            : filteredCertificates.map(c => c.id);
+        if (ids.length === 0) {
+            toast.error('No certificates to export');
+            return;
+        }
+        setIsExporting(true);
+        try {
+            const res = await fetch('/api/admin/certificates/export', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                credentials: 'include',
+                body: JSON.stringify({ certificateIds: ids, format }),
+            });
+            if (!res.ok) {
+                const data = await res.json().catch(() => ({}));
+                toast.error(data.error || 'Export failed');
+                return;
+            }
+            const blob = await res.blob();
+            const ext = format === 'csv' ? 'csv' : 'xlsx';
+            const filename = `certificates-export-${Date.now()}.${ext}`;
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = filename;
+            a.click();
+            URL.revokeObjectURL(url);
+            toast.success(`Exported ${ids.length} certificate(s) as ${ext.toUpperCase()}`);
+        } catch (err) {
+            toast.error('Export failed');
+        } finally {
+            setIsExporting(false);
         }
     };
 
@@ -286,72 +340,76 @@ export default function EventCertificatesPage({ params }: PageProps) {
                                 </div>
                             )}
 
-                            {/* Certificates List */}
+                            {/* Certificates Table */}
                             <div className="bg-slate-900/50 backdrop-blur-xl rounded-2xl p-6 border border-slate-800/50">
-                                <h2 className="text-xl font-bold text-white mb-4">Issued Certificates</h2>
+                                <div className="flex flex-col gap-6 mb-6">
+                                    <h2 className="text-xl font-bold text-white">Issued Certificates</h2>
 
-                                {certificates.length === 0 ? (
-                                    <p className="text-slate-400 text-center py-8">
-                                        No certificates have been issued for this event yet.
-                                    </p>
-                                ) : (
-                                    <>
-                                        {/* Bulk Actions Toolbar */}
-                                        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-4 pb-4 border-b border-slate-800">
-                                            {/* Left: Selection Controls */}
-                                            <div className="flex items-center gap-4">
-                                                <label className="flex items-center gap-2 cursor-pointer text-slate-300 hover:text-white transition-colors">
-                                                    <input
-                                                        type="checkbox"
-                                                        checked={selectedCertificates.size === certificates.length && certificates.length > 0}
-                                                        onChange={toggleSelectAll}
-                                                        className="w-4 h-4 rounded border-slate-600 text-blue-600 focus:ring-blue-500 focus:ring-offset-slate-900 cursor-pointer"
-                                                    />
-                                                    <span className="text-sm">
-                                                        {selectedCertificates.size === certificates.length && certificates.length > 0
-                                                            ? 'Deselect All'
-                                                            : 'Select All'}
-                                                    </span>
-                                                </label>
-                                                <span className="text-slate-400 text-sm">
-                                                    {selectedCertificates.size} of {certificates.length} selected
-                                                </span>
-                                            </div>
-
-                                            {/* Right: Action Buttons */}
-                                            <div className="flex items-center gap-2">
-                                                <button
-                                                    disabled={selectedCertificates.size === 0}
-                                                    onClick={() => setShowBulkDeleteConfirm(true)}
-                                                    className="flex items-center gap-2 px-4 py-2 bg-red-600/50 hover:bg-red-600 text-white rounded-lg transition-colors text-sm disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
-                                                >
-                                                    <Trash2 className="w-4 h-4" />
-                                                    Delete Selected ({selectedCertificates.size})
-                                                </button>
-                                                <button
-                                                    onClick={() => setShowDeleteAllConfirm(true)}
-                                                    className="flex items-center gap-2 px-4 py-2 bg-red-700/50 hover:bg-red-700 text-white rounded-lg transition-colors text-sm cursor-pointer"
-                                                >
-                                                    <Trash2 className="w-4 h-4" />
-                                                    Delete All ({certificates.length})
-                                                </button>
-                                            </div>
+                                    <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4">
+                                        {/* Search Bar */}
+                                        <div className="relative w-full lg:w-96">
+                                            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                                            <input
+                                                type="text"
+                                                placeholder="Search by name, email, or certificate number..."
+                                                value={searchTerm}
+                                                onChange={(e) => setSearchTerm(e.target.value)}
+                                                className="w-full bg-slate-950/50 border border-slate-700/50 rounded-lg pl-10 pr-4 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-blue-500/50 placeholder:text-slate-500"
+                                            />
                                         </div>
 
-                                        {/* Certificate Cards */}
-                                        <div className="space-y-3">
-                                            {certificates.map((cert) => (
-                                                <CertificateCard
-                                                    key={cert.id}
-                                                    certificate={cert}
-                                                    isSelected={selectedCertificates.has(cert.id)}
-                                                    onToggleSelect={() => toggleCertificateSelection(cert.id)}
-                                                    onDelete={(id) => setDeleteConfirmId(id)}
-                                                />
-                                            ))}
+                                        <div className="flex flex-wrap items-center gap-2 justify-end w-full lg:w-auto">
+                                            <button
+                                                type="button"
+                                                onClick={() => setShowImportModal(true)}
+                                                className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-700 hover:to-blue-700 text-white rounded-lg transition-colors text-sm cursor-pointer"
+                                            >
+                                                <Upload className="w-4 h-4" />
+                                                Import
+                                            </button>
+                                            <button
+                                                type="button"
+                                                disabled={certificates.length === 0 || isExporting}
+                                                onClick={() => handleExportSelected('csv')}
+                                                className="flex items-center gap-2 px-3 py-2 bg-slate-700/50 hover:bg-slate-700 text-white rounded-lg transition-colors text-sm disabled:opacity-50 cursor-pointer"
+                                                title="Export all as CSV"
+                                            >
+                                                <FileDown className="w-4 h-4" />
+                                                Export All CSV
+                                            </button>
+                                            <button
+                                                type="button"
+                                                disabled={certificates.length === 0 || isExporting}
+                                                onClick={() => handleExportSelected('xlsx')}
+                                                className="flex items-center gap-2 px-3 py-2 bg-slate-700/50 hover:bg-slate-700 text-white rounded-lg transition-colors text-sm disabled:opacity-50 cursor-pointer"
+                                                title="Export all as XLSX"
+                                            >
+                                                <FileDown className="w-4 h-4" />
+                                                Export All XLSX
+                                            </button>
+                                            <button
+                                                type="button"
+                                                onClick={() => setShowDeleteAllConfirm(true)}
+                                                disabled={filteredCertificates.length === 0}
+                                                className="flex items-center gap-2 px-4 py-2 bg-red-700/50 hover:bg-red-700 text-white rounded-lg transition-colors text-sm disabled:opacity-50 cursor-pointer"
+                                            >
+                                                <Trash2 className="w-4 h-4" />
+                                                Delete All ({filteredCertificates.length})
+                                            </button>
                                         </div>
-                                    </>
-                                )}
+                                    </div>
+                                </div>
+
+                                <CertificateTable
+                                    certificates={filteredCertificates}
+                                    selectedIds={selectedCertificates}
+                                    onToggleSelect={toggleCertificateSelection}
+                                    onSelectAll={toggleSelectAll}
+                                    onDelete={(id) => setDeleteConfirmId(id)}
+                                    onBulkDelete={() => setShowBulkDeleteConfirm(true)}
+                                    onExportSelected={handleExportSelected}
+                                    isLoading={isExporting}
+                                />
                             </div>
                         </>
                     )}
@@ -398,10 +456,10 @@ This action CANNOT be undone!`}
                 }}
                 onConfirm={handleDeleteAll}
                 title="🚨 Delete ALL Certificates?"
-                message={`You are about to delete ALL ${certificates.length} certificates for this event!
+                message={`You are about to delete ${filteredCertificates.length} certificate(s)${searchTerm ? ' matching your search' : ''}!
 
 This will:
-• Permanently delete ${certificates.length} certificate PDFs from Cloudinary
+• Permanently delete ${filteredCertificates.length} certificate PDFs from Cloudinary
 • Remove all database records
 • Break ALL verification URLs for this event
 
@@ -414,6 +472,14 @@ Type "DELETE ALL" to confirm:`}
                 requireConfirmText="DELETE ALL"
                 confirmTextValue={deleteAllConfirmText}
                 onConfirmTextChange={setDeleteAllConfirmText}
+            />
+
+            <ImportCertificatesModal
+                isOpen={showImportModal}
+                onClose={() => setShowImportModal(false)}
+                eventId={eventId}
+                eventTitle={event?.title}
+                onSuccess={() => fetchCertificates(eventId)}
             />
         </div>
     );

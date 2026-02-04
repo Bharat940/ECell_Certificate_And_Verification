@@ -1,6 +1,10 @@
 /**
- * PDF Generation Utility - VERCEL COMPATIBLE VERSION
- * Uses @sparticuz/chromium-min with externally hosted chromium pack
+ * PDF Generation Utility
+ * - Local dev:  puppeteer-core → system Chrome/Chromium (must be installed)
+ * - Production: puppeteer-core → @sparticuz/chromium-min (Vercel serverless)
+ *
+ * Install:
+ *   npm install puppeteer-core @sparticuz/chromium-min --save
  */
 
 import puppeteer, { type Browser } from "puppeteer-core";
@@ -8,6 +12,10 @@ import chromium from "@sparticuz/chromium-min";
 import fs from "fs/promises";
 import { logger } from "./logger";
 import { getTemplatePath } from "./templateUtils";
+
+// ---------------------------------------------------------------------------
+// Types
+// ---------------------------------------------------------------------------
 
 export interface CertificateData {
     participantName: string;
@@ -22,13 +30,106 @@ export interface CertificateData {
     templateName: string;
 }
 
-// IMPORTANT: Specify your hosted chromium pack URL
-// Using the official GitHub release for testing - User should host this on Vercel Blob or similar for production
-const CHROMIUM_PACK_URL = "https://github.com/Sparticuz/chromium/releases/download/v143.0.4/chromium-v143.0.4-pack.x64.tar";
+// ---------------------------------------------------------------------------
+// Config
+// ---------------------------------------------------------------------------
+
+const IS_DEV = process.env.NODE_ENV === "development";
 
 /**
- * Generate Certificate PDF
+ * Hosted chromium pack for Vercel.
+ * Consider re-hosting on Vercel Blob or a private CDN for production.
  */
+const CHROMIUM_PACK_URL =
+    "https://github.com/Sparticuz/chromium/releases/download/v143.0.4/chromium-v143.0.4-pack.x64.tar";
+
+/**
+ * Known system Chrome/Chromium paths per platform.
+ * Returns the first one that actually exists on disk, or null.
+ */
+const SYSTEM_CHROME_PATHS: Record<string, string[]> = {
+    win32: [
+        "C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe",
+        "C:\\Program Files (x86)\\Google\\Chrome\\Application\\chrome.exe",
+    ],
+    darwin: [
+        "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome",
+        "/Applications/Chromium.app/Contents/MacOS/Chromium",
+    ],
+    linux: [
+        "/usr/bin/google-chrome",
+        "/usr/bin/google-chrome-stable",
+        "/usr/bin/chromium",
+        "/usr/bin/chromium-browser",
+    ],
+};
+
+async function findSystemChrome(): Promise<string | null> {
+    const candidates = SYSTEM_CHROME_PATHS[process.platform] ?? [];
+    for (const candidate of candidates) {
+        try {
+            await fs.access(candidate); // throws if path does not exist
+            return candidate;
+        } catch {
+            // not found – try next
+        }
+    }
+    return null;
+}
+
+// ---------------------------------------------------------------------------
+// Browser factory
+// ---------------------------------------------------------------------------
+
+async function launchBrowser(): Promise<Browser> {
+    // ── Production (Vercel) ──────────────────────────────────────────────────
+    if (!IS_DEV) {
+        chromium.setGraphicsMode = false;
+        const executablePath = await chromium.executablePath(CHROMIUM_PACK_URL);
+        logger.info("PDF", "Chromium binary extracted", { executablePath });
+
+        return await puppeteer.launch({
+            args: [
+                ...chromium.args,
+                "--disable-gpu",
+                "--disable-dev-shm-usage",
+                "--disable-setuid-sandbox",
+                "--no-sandbox",
+                "--single-process",
+                "--no-zygote",
+            ],
+            defaultViewport: { width: 1920, height: 1080, deviceScaleFactor: 1 },
+            executablePath,
+            headless: "shell",
+        });
+    }
+
+    // ── Local dev (system Chrome) ────────────────────────────────────────────
+    const executablePath = await findSystemChrome();
+
+    if (!executablePath) {
+        throw new Error(
+            "No Chrome/Chromium found on this machine. " +
+            "Install Google Chrome or Chromium to generate PDFs locally.\n" +
+            "Checked paths: " +
+            (SYSTEM_CHROME_PATHS[process.platform] ?? []).join(", ")
+        );
+    }
+
+    logger.info("PDF", "Using system Chrome", { executablePath });
+
+    return await puppeteer.launch({
+        executablePath,
+        headless: "shell",
+        args: ["--no-sandbox", "--disable-setuid-sandbox"],
+        defaultViewport: { width: 1920, height: 1080, deviceScaleFactor: 1 },
+    });
+}
+
+// ---------------------------------------------------------------------------
+// Core: generate a certificate PDF
+// ---------------------------------------------------------------------------
+
 export async function generateCertificatePDF(
     data: CertificateData
 ): Promise<Buffer> {
@@ -40,11 +141,10 @@ export async function generateCertificatePDF(
             environment: process.env.NODE_ENV,
         });
 
-        // Load HTML template
+        // ── 1. Load & hydrate the HTML template ──────────────────────────────
         const templatePath = getTemplatePath(data.templateName);
         let html = await fs.readFile(templatePath, "utf-8");
 
-        // Inject dynamic values
         html = html
             .replace(/{{participantName}}/g, data.participantName)
             .replace(/{{eventName}}/g, data.eventName)
@@ -57,41 +157,14 @@ export async function generateCertificatePDF(
             .replace(/{{organizerName}}/g, data.organizerName)
             .replace(/{{qrCodeDataUrl}}/g, data.qrCodeDataUrl);
 
-        logger.info("PDF", "Launching Chromium...");
+        // ── 2. Launch browser ─────────────────────────────────────────────────
+        logger.info("PDF", "Launching browser...");
+        browser = await launchBrowser();
 
-        // CRITICAL: Disable WebGL for serverless
-        chromium.setGraphicsMode = false;
-
-        // Get executable path - pass the URL to chromium pack
-        // This will download and extract to /tmp on first run
-        const executablePath = await chromium.executablePath(CHROMIUM_PACK_URL);
-
-        logger.info("PDF", "Chromium binary extracted", { executablePath });
-
-        // Launch browser
-        browser = await puppeteer.launch({
-            args: [
-                ...chromium.args,
-                '--disable-gpu',
-                '--disable-dev-shm-usage',
-                '--disable-setuid-sandbox',
-                '--no-sandbox',
-                '--single-process',
-                '--no-zygote',
-            ],
-            defaultViewport: {
-                width: 1920,
-                height: 1080,
-                deviceScaleFactor: 1,
-            },
-            executablePath: executablePath,
-            headless: "shell",
-        });
-
+        // ── 3. Render HTML → PDF ─────────────────────────────────────────────
         logger.info("PDF", "Browser launched, creating page...");
         const page = await browser.newPage();
 
-        logger.info("PDF", "Setting page content...");
         await page.setContent(html, {
             waitUntil: "networkidle0",
             timeout: 30000,
@@ -127,7 +200,7 @@ export async function generateCertificatePDF(
         if (browser) {
             try {
                 const pages = await browser.pages();
-                await Promise.all(pages.map(page => page.close().catch(() => { })));
+                await Promise.all(pages.map((p) => p.close().catch(() => { })));
                 await browser.close();
                 logger.info("PDF", "Browser closed successfully");
             } catch (closeError) {
@@ -137,10 +210,10 @@ export async function generateCertificatePDF(
     }
 }
 
-/**
- * Validate that the certificate template exists
- * @returns true if template exists, false otherwise
- */
+// ---------------------------------------------------------------------------
+// Utility: validate the default template exists on disk
+// ---------------------------------------------------------------------------
+
 export async function validateCertificateTemplate(): Promise<boolean> {
     try {
         const templatePath = getTemplatePath("certificate-default.html");
