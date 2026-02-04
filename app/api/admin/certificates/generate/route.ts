@@ -22,7 +22,7 @@ export const runtime = 'nodejs';
 export const maxDuration = 60; // Allow time for multiple PDFs
 export const dynamic = 'force-dynamic';
 
-const MAX_ROWS_PER_REQUEST = 20;
+const MAX_ROWS_PER_REQUEST = 10;
 
 export async function POST(request: NextRequest) {
     logger.apiRequest('POST', '/api/admin/certificates/generate', { context: '[BATCH_IMPORT]' });

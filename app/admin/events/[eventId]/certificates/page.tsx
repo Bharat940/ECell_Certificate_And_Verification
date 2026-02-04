@@ -152,35 +152,60 @@ export default function EventCertificatesPage({ params }: PageProps) {
         if (selectedCertificates.size === 0) return;
 
         setIsBulkDeleting(true);
-        try {
-            const response = await fetch('/api/admin/certificates/bulk-delete', {
-                method: 'DELETE',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                credentials: 'include',
-                body: JSON.stringify({
-                    certificateIds: Array.from(selectedCertificates)
-                }),
-            });
+        const idsToDelete = Array.from(selectedCertificates);
+        const BATCH_SIZE = 10;
+        const totalBatches = Math.ceil(idsToDelete.length / BATCH_SIZE);
+        let deletedCount = 0;
+        let failedCount = 0;
+        const errors: string[] = [];
 
-            if (response.ok) {
-                const data = await response.json();
-                if (data.deleted > 0) {
-                    toast.success(`Successfully deleted ${data.deleted} certificate(s)!`);
+        try {
+            for (let i = 0; i < totalBatches; i++) {
+                const batch = idsToDelete.slice(i * BATCH_SIZE, (i + 1) * BATCH_SIZE);
+                const toastId = toast.loading(`Deleting certificates... (Batch ${i + 1} of ${totalBatches})`);
+
+                try {
+                    const response = await fetch('/api/admin/certificates/bulk-delete', {
+                        method: 'DELETE',
+                        headers: { 'Content-Type': 'application/json' },
+                        credentials: 'include',
+                        body: JSON.stringify({ certificateIds: batch }),
+                    });
+
+                    toast.dismiss(toastId);
+
+                    if (response.ok) {
+                        const data = await response.json();
+                        deletedCount += data.deleted || 0;
+                        failedCount += data.failed || 0;
+                        if (data.errors) {
+                            errors.push(...data.errors.map((e: any) => e.error));
+                        }
+                    } else {
+                        const data = await response.json();
+                        failedCount += batch.length;
+                        errors.push(data.error || 'Batch deletion failed');
+                    }
+                } catch (err) {
+                    toast.dismiss(toastId);
+                    failedCount += batch.length;
+                    errors.push('Network error occurred');
                 }
-                if (data.failed > 0) {
-                    toast.error(`Failed to delete ${data.failed} certificate(s)`);
-                }
-                await fetchCertificates(eventId);
-                setSelectedCertificates(new Set());
-                setShowBulkDeleteConfirm(false);
-            } else {
-                const data = await response.json();
-                toast.error(data.error || 'Failed to delete certificates');
             }
+
+            if (deletedCount > 0) {
+                toast.success(`Successfully deleted ${deletedCount} certificate(s)!`);
+            }
+            if (failedCount > 0) {
+                toast.error(`Failed to delete ${failedCount} certificate(s)`);
+                console.error('Deletion errors:', errors);
+            }
+
+            await fetchCertificates(eventId);
+            setSelectedCertificates(new Set());
+            setShowBulkDeleteConfirm(false);
         } catch (err) {
-            toast.error('Failed to delete certificates');
+            toast.error('An unexpected error occurred during deletion');
         } finally {
             setIsBulkDeleting(false);
         }
@@ -190,44 +215,73 @@ export default function EventCertificatesPage({ params }: PageProps) {
         if (filteredCertificates.length === 0) return;
 
         setIsBulkDeleting(true);
+        const allIds = filteredCertificates.map(c => c.id);
+        const BATCH_SIZE = 10;
+        const totalBatches = Math.ceil(allIds.length / BATCH_SIZE);
+        let deletedCount = 0;
+        let failedCount = 0;
+        const errors: string[] = [];
+
         try {
-            const allIds = filteredCertificates.map(c => c.id);
-            const response = await fetch('/api/admin/certificates/bulk-delete', {
-                method: 'DELETE',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                credentials: 'include',
-                body: JSON.stringify({
-                    certificateIds: allIds
-                }),
-            });
+            for (let i = 0; i < totalBatches; i++) {
+                const batch = allIds.slice(i * BATCH_SIZE, (i + 1) * BATCH_SIZE);
+                // We use a temporary toast for progress, but ConfirmDialog might prevent interaction.
+                // Since ConfirmDialog is open, toasts will show on top.
+                const toastId = toast.loading(`Deleting ALL certificates... (Batch ${i + 1} of ${totalBatches})`);
 
-            if (response.ok) {
-                const data = await response.json();
-                if (data.deleted > 0) {
-                    toast.success(`Successfully deleted all ${data.deleted} certificates!`);
+                try {
+                    const response = await fetch('/api/admin/certificates/bulk-delete', {
+                        method: 'DELETE',
+                        headers: { 'Content-Type': 'application/json' },
+                        credentials: 'include',
+                        body: JSON.stringify({ certificateIds: batch }),
+                    });
+
+                    toast.dismiss(toastId);
+
+                    if (response.ok) {
+                        const data = await response.json();
+                        deletedCount += data.deleted || 0;
+                        failedCount += data.failed || 0;
+                        if (data.errors) {
+                            errors.push(...data.errors.map((e: any) => e.error));
+                        }
+                    } else {
+                        const data = await response.json();
+                        failedCount += batch.length;
+                        errors.push(data.error || 'Batch deletion failed');
+                    }
+                } catch (err) {
+                    toast.dismiss(toastId);
+                    failedCount += batch.length;
+                    errors.push('Network error occurred');
                 }
-                if (data.failed > 0) {
-                    toast.error(`Failed to delete ${data.failed} certificate(s)`);
-                }
-                await fetchCertificates(eventId);
-
-                // Clear deleted IDs from selection
-                const newSelection = new Set(selectedCertificates);
-                allIds.forEach(id => newSelection.delete(id));
-                setSelectedCertificates(newSelection);
-
-                setShowDeleteAllConfirm(false);
-                setDeleteAllConfirmText('');
-            } else {
-                const data = await response.json();
-                toast.error(data.error || 'Failed to delete certificates');
             }
+
+            if (deletedCount > 0) {
+                toast.success(`Successfully deleted ${deletedCount} certificates!`);
+            }
+            if (failedCount > 0) {
+                toast.error(`Failed to delete ${failedCount} certificate(s)`);
+                console.error('Deletion errors:', errors);
+            }
+
+            await fetchCertificates(eventId);
+
+            // Clear deleted IDs from selection
+            const newSelection = new Set(selectedCertificates);
+            allIds.forEach(id => newSelection.delete(id));
+            setSelectedCertificates(newSelection);
+
+            setShowDeleteAllConfirm(false);
+            setDeleteAllConfirmText('');
         } catch (err) {
-            toast.error('Failed to delete certificates');
+            toast.error('An unexpected error occurred during deletion');
+            setIsBulkDeleting(false); // Only reset if critical outer error
         } finally {
             setIsBulkDeleting(false);
+            // Ensure dialog is closed even if failed, as per user request to avoid issues
+            setShowDeleteAllConfirm(false);
         }
     };
 
