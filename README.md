@@ -9,6 +9,11 @@ A professional certificate management platform for E-Cell RGPV, featuring automa
 - Complete event management (create, edit, delete)
 - Multi-template certificate generation
 - Bulk certificate operations
+- **Advanced Search & Filtering:** Find certificates by name, email, or number
+- **Import/Export System:**
+  - Import certificates from Excel/CSV
+  - Export data to CSV/XLSX
+- **Safe Batch Processing:** Optimized for Vercel (client-side batching)
 - Real-time certificate preview and download
 - Copy verification URLs and certificate numbers
 
@@ -37,6 +42,7 @@ A professional certificate management platform for E-Cell RGPV, featuring automa
 - **Styling:** Tailwind CSS
 - **Authentication:** JWT (jsonwebtoken)
 - **UI Components:** Lucide React icons
+- **Excel Processing:** SheetJS (xlsx)
 - **Notifications:** react-hot-toast
 
 ## Prerequisites
@@ -120,6 +126,16 @@ Visit [http://localhost:3000](http://localhost:3000)
 
 ### Bulk Operations
 
+**Import Certificates:**
+1. Click "Import" button
+2. Upload Excel/CSV file
+3. Preview and validate rows
+4. Generate in batches (safe execution)
+
+**Export Data:**
+1. Select certificates (optional)
+2. Click "Export CSV" or "Export XLSX"
+
 **Delete Selected Certificates:**
 1. Navigate to event certificates page
 2. Select certificates using checkboxes
@@ -128,7 +144,7 @@ Visit [http://localhost:3000](http://localhost:3000)
 **Delete All Certificates:**
 1. Click "Delete All (X)" button
 2. Type event name to confirm
-3. Confirm deletion
+3. Confirm deletion (executes in safe batches)
 
 ### Verifying Certificates
 
@@ -159,6 +175,9 @@ Visit [http://localhost:3000](http://localhost:3000)
       /events                     # Event CRUD operations
       /certificates               # Certificate generation and management
       /certificates/bulk-delete   # Bulk delete operations
+      /certificates/import        # Import certificates
+      /certificates/export        # Export certificates
+      /certificates/generate      # Batch generation
     /verify/[certificateNumber]   # Certificate verification
 
 /lib
@@ -172,6 +191,9 @@ Visit [http://localhost:3000](http://localhost:3000)
   templateUtils.ts                # Template management
   templates.ts                    # Template metadata
   logger.ts                       # Logging system
+  importValidation.ts             # Import validation logic
+  excelParser.ts                  # Excel parsing logic
+  csvParse.ts                     # CSV parsing logic
 
 /models
   Event.ts                        # Event schema and model
@@ -182,7 +204,10 @@ Visit [http://localhost:3000](http://localhost:3000)
   CertificateCard.tsx             # Certificate display component
   EventFormModal.tsx              # Event creation/edit modal
   CertificateFormModal.tsx        # Certificate generation modal
+  ImportCertificatesModal.tsx     # Import & batch generation modal
+  CertificateTable.tsx            # Certificate list & bulk actions
   ConfirmDialog.tsx               # Confirmation dialog component
+  ToastProvider.tsx               # Toast notification wrapper
 
 /public
   /templates
@@ -292,6 +317,8 @@ Compatible with:
 - `POST /api/admin/certificates` - Generate certificate
 - `DELETE /api/admin/certificates/[certificateId]` - Delete certificate
 - `POST /api/admin/certificates/bulk-delete` - Bulk delete certificates
+- `POST /api/admin/certificates/import` - Parse Excel/CSV file
+- `POST /api/admin/certificates/export` - Export certificate data
 
 ### Public Routes
 
