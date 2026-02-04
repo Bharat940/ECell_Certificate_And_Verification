@@ -20,7 +20,7 @@ interface ImportCertificatesModalProps {
     onSuccess: () => void;
 }
 
-const MAX_GENERATE_PER_REQUEST = 10;
+const MAX_GENERATE_PER_REQUEST = 5;
 
 export function ImportCertificatesModal({
     isOpen,

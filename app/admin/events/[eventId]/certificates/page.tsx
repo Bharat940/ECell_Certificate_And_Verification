@@ -153,7 +153,7 @@ export default function EventCertificatesPage({ params }: PageProps) {
 
         setIsBulkDeleting(true);
         const idsToDelete = Array.from(selectedCertificates);
-        const BATCH_SIZE = 10;
+        const BATCH_SIZE = 5;
         const totalBatches = Math.ceil(idsToDelete.length / BATCH_SIZE);
         let deletedCount = 0;
         let failedCount = 0;
@@ -216,7 +216,7 @@ export default function EventCertificatesPage({ params }: PageProps) {
 
         setIsBulkDeleting(true);
         const allIds = filteredCertificates.map(c => c.id);
-        const BATCH_SIZE = 10;
+        const BATCH_SIZE = 5;
         const totalBatches = Math.ceil(allIds.length / BATCH_SIZE);
         let deletedCount = 0;
         let failedCount = 0;

@@ -5,6 +5,9 @@ import { requireAdmin } from '@/lib/auth';
 import { deleteCertificatePDF } from '@/lib/cloudinary';
 import { logger } from '@/lib/logger';
 
+export const maxDuration = 60; // Allow sufficient time for Cloudinary deletes
+export const dynamic = 'force-dynamic';
+
 export async function DELETE(request: NextRequest) {
     try {
         // Verify admin authentication
