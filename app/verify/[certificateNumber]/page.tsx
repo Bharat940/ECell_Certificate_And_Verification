@@ -149,31 +149,6 @@ export default function VerifyPage({ params }: VerifyPageProps) {
                                         </div>
                                     </div>
 
-                                    <div className="flex items-start gap-3">
-                                        <Calendar className="w-5 h-5 text-purple-400 mt-0.5 shrink-0" />
-                                        <div className="min-w-0 flex-1">
-                                            <p className="text-slate-400 text-sm">Event Date</p>
-                                            <p className="text-white font-semibold">
-                                                {data.certificate?.event.startDate && data.certificate?.event.endDate &&
-                                                    formatDateRange(data.certificate.event.startDate, data.certificate.event.endDate)
-                                                }
-                                            </p>
-                                        </div>
-                                    </div>
-
-                                    <div className="flex items-start gap-3">
-                                        <Hash className="w-5 h-5 text-green-400 mt-0.5 shrink-0" />
-                                        <div className="min-w-0 flex-1">
-                                            <p className="text-slate-400 text-sm">Issued On</p>
-                                            <p className="text-white font-semibold">
-                                                {data.certificate?.issuedAt && new Date(data.certificate.issuedAt).toLocaleDateString('en-US', {
-                                                    year: 'numeric',
-                                                    month: 'long',
-                                                    day: 'numeric'
-                                                })}
-                                            </p>
-                                        </div>
-                                    </div>
                                 </div>
 
                                 {data.certificate?.certificateUrl && (

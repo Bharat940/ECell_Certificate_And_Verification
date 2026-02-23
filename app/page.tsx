@@ -2,12 +2,14 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Info, Shield } from 'lucide-react';
+import { Info, Shield, QrCode } from 'lucide-react';
 
 import Image from 'next/image';
+import { QRScannerModal } from '@/components/QRScannerModal';
 
 export default function Home() {
   const [certificateNumber, setCertificateNumber] = useState('');
+  const [isScannerOpen, setIsScannerOpen] = useState(false);
   const router = useRouter();
 
   const handleVerify = (e: React.FormEvent<HTMLFormElement>) => {
@@ -15,6 +17,24 @@ export default function Home() {
 
     if (certificateNumber.trim()) {
       router.push(`/verify/${certificateNumber.trim().toUpperCase()}`);
+    }
+  };
+
+  const handleScanResult = (result: string) => {
+    setIsScannerOpen(false);
+    try {
+      // If the QR code is a full verification URL, parse the pathname
+      const url = new URL(result);
+      const urlParts = url.pathname.split('/');
+      const code = urlParts[urlParts.length - 1];
+      if (code) {
+        router.push(`/verify/${code.toUpperCase()}`);
+      } else {
+        router.push(`/verify/${result.toUpperCase()}`);
+      }
+    } catch {
+      // If it's not a URL, assume it's just the certificate code String itself
+      router.push(`/verify/${result.toUpperCase()}`);
     }
   };
 
@@ -85,6 +105,21 @@ export default function Home() {
             </button>
           </form>
 
+          <div className="flex items-center gap-4 my-6">
+            <div className="flex-1 h-px bg-slate-800"></div>
+            <span className="text-slate-500 text-sm font-medium">OR</span>
+            <div className="flex-1 h-px bg-slate-800"></div>
+          </div>
+
+          <button
+            type="button"
+            onClick={() => setIsScannerOpen(true)}
+            className="w-full bg-slate-800/80 hover:bg-slate-700 text-white font-medium py-3 sm:py-4 px-6 rounded-xl sm:rounded-2xl transition-all duration-300 transform active:scale-[0.98] shadow-md cursor-pointer text-base sm:text-lg flex justify-center items-center gap-3 border border-slate-700"
+          >
+            <QrCode className="w-5 h-5 text-blue-400" />
+            Scan QR Code
+          </button>
+
           {/* Info Section */}
           <div className="mt-8 pt-6 border-t border-slate-800 text-center">
             <p className="text-slate-400 text-xs sm:text-sm flex items-center justify-center gap-2">
@@ -94,6 +129,12 @@ export default function Home() {
           </div>
         </div>
       </div>
+
+      <QRScannerModal
+        isOpen={isScannerOpen}
+        onClose={() => setIsScannerOpen(false)}
+        onScan={handleScanResult}
+      />
     </main>
   );
 }
