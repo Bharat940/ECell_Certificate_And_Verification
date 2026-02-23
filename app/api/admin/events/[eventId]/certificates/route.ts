@@ -57,9 +57,10 @@ export async function GET(
                 id: cert._id,
                 certificateNumber: cert.certificateNumber,
                 participantName: cert.participantName,
+                participantEmail: cert.participantEmail || undefined,
                 certificateUrl: cert.certificateUrl,
-                issuedAt: cert.issuedAt,
-                verificationUrl: `${process.env.NEXT_PUBLIC_APP_URL}/verify/${cert.certificateNumber}`,
+                verificationUrl: `${(process.env.NEXT_PUBLIC_APP_URL || '').replace(/\/+$/, '')}/verify/${cert.certificateNumber}`,
+                issuedAt: cert.issuedAt.toISOString(),
             })),
         });
     } catch (error: any) {

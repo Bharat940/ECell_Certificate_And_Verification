@@ -4,6 +4,8 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Info, Shield } from 'lucide-react';
 
+import Image from 'next/image';
+
 export default function Home() {
   const [certificateNumber, setCertificateNumber] = useState('');
   const router = useRouter();
@@ -17,68 +19,79 @@ export default function Home() {
   };
 
   return (
-    <main className="min-h-screen bg-slate-950 flex items-center justify-center p-4 relative overflow-hidden">
-      {/* Subtle background pattern */}
-      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-blue-900/20 via-slate-950 to-slate-950"></div>
+    <main className="min-h-screen bg-slate-950 flex items-center justify-center p-4 relative overflow-hidden font-sans">
+      {/* Subtle organic background pattern in dark mode */}
+      <div className="absolute inset-0 bg-[radial-gradient(#334155_1px,transparent_1px)] [background-size:16px_16px] opacity-20"></div>
 
-      {/* Accent glow effects */}
-      <div className="absolute top-1/4 -left-48 w-96 h-96 bg-blue-600/10 rounded-full blur-3xl"></div>
-      <div className="absolute bottom-1/4 -right-48 w-96 h-96 bg-cyan-600/10 rounded-full blur-3xl"></div>
+      <div className="w-full max-w-xl relative z-10 mx-auto">
 
-      <div className="w-full max-w-2xl relative z-10">
-        {/* Header */}
-        <div className="text-center mb-8 sm:mb-12">
-          <h1 className="text-4xl sm:text-5xl md:text-6xl font-bold text-white mb-4 tracking-tight px-4">
-            E-Cell Certificate
-            <span className="block text-transparent bg-clip-text bg-gradient-to-r from-blue-400 via-cyan-400 to-blue-500 mt-2">
-              Verification System
-            </span>
-          </h1>
-          <p className="text-slate-400 text-base sm:text-lg mt-4 px-4">
-            Enter your certificate number to verify authenticity
-          </p>
-        </div>
+        {/* Verification Card - Clean, solid design but dark */}
+        <div className="bg-slate-900/80 backdrop-blur-xl rounded-2xl sm:rounded-3xl p-6 sm:p-10 md:p-12 shadow-[0_8px_30px_rgb(0,0,0,0.5)] border border-slate-800 relative overflow-hidden">
 
-        {/* Verification Card */}
-        <div className="bg-slate-900/50 backdrop-blur-xl rounded-2xl p-6 sm:p-8 shadow-2xl border border-slate-800/50 hover:border-blue-900/50 transition-all duration-300">
-          <form onSubmit={handleVerify} className="space-y-5 sm:space-y-6">
+          {/* Subtle top decoration bar */}
+          <div className="absolute top-0 left-0 w-full h-1.5 bg-gradient-to-r from-blue-600 via-cyan-500 to-blue-600"></div>
+
+          {/* Logo Section */}
+          <div className="flex justify-center mb-6 sm:mb-10">
+            <Image
+              src="/assets/ECell_Full_Logo.png"
+              alt="E-Cell RGPV Logo"
+              width={200}
+              height={80}
+              className="object-contain w-32 sm:w-40 md:w-52"
+              priority
+            />
+          </div>
+
+          {/* Header */}
+          <div className="text-center mb-8 sm:mb-10">
+            <h1 className="text-xl sm:text-2xl md:text-3xl font-bold text-white tracking-tight">
+              Certificate Verification
+            </h1>
+            <p className="text-slate-400 text-sm sm:text-base mt-3">
+              Enter your unique certificate number below to securely verify its authenticity.
+            </p>
+          </div>
+
+          <form onSubmit={handleVerify} className="space-y-6">
             <div>
               <label
                 htmlFor="certificateNumber"
-                className="block text-sm font-semibold text-slate-300 mb-3"
+                className="block text-sm font-semibold text-slate-300 mb-2 ml-1"
               >
                 Certificate Number
               </label>
-              <input
-                type="text"
-                id="certificateNumber"
-                value={certificateNumber}
-                onChange={(e) => setCertificateNumber(e.target.value)}
-                placeholder="ECELL-2025-KD93Q"
-                className="w-full px-4 sm:px-5 py-3 sm:py-4 bg-slate-950/80 border border-slate-700 rounded-xl text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all uppercase font-mono text-base sm:text-lg tracking-wider"
-                required
-              />
-              <p className="mt-3 text-xs sm:text-sm text-slate-500 flex items-center gap-2">
-                <Info className="w-4 h-4 flex-shrink-0" />
-                Format: ECELL-YYYY-XXXXX
-              </p>
+              <div className="relative">
+                <input
+                  type="text"
+                  id="certificateNumber"
+                  value={certificateNumber}
+                  onChange={(e) => setCertificateNumber(e.target.value)}
+                  placeholder="e.g. ECELL-2025-ABCD1"
+                  className="w-full px-4 sm:px-5 py-3 sm:py-4 bg-slate-950/50 border border-slate-700 rounded-xl sm:rounded-2xl text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 transition-all uppercase font-mono tracking-wide text-sm sm:text-lg"
+                  required
+                />
+              </div>
             </div>
 
             <button
               type="submit"
-              className="w-full bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700 text-white font-semibold py-3 sm:py-4 px-6 rounded-xl transition-all duration-300 transform hover:scale-[1.02] active:scale-[0.98] shadow-lg shadow-blue-900/50 hover:shadow-xl hover:shadow-blue-800/50 cursor-pointer text-base sm:text-lg"
+              className="w-full bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700 text-white font-medium py-3 sm:py-4 px-6 rounded-xl sm:rounded-2xl transition-all duration-300 transform active:scale-[0.98] shadow-lg shadow-blue-900/20 cursor-pointer text-base sm:text-lg flex justify-center items-center gap-2 group border border-blue-500/20"
             >
-              Verify Certificate
+              Verify Credential
+              <svg className="w-5 h-5 text-white/70 group-hover:text-white transition-colors group-hover:translate-x-1 duration-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 5l7 7m0 0l-7 7m7-7H3" />
+              </svg>
             </button>
           </form>
-        </div>
 
-        {/* Info Section */}
-        <div className="mt-6 sm:mt-8 text-center px-4">
-          <p className="text-slate-500 text-xs sm:text-sm flex items-center justify-center gap-2 flex-wrap">
-            <Shield className="w-4 h-4 flex-shrink-0" />
-            <span>All certificates issued by E-Cell are verifiable through this system</span>
-          </p>
+          {/* Info Section */}
+          <div className="mt-8 pt-6 border-t border-slate-800 text-center">
+            <p className="text-slate-400 text-xs sm:text-sm flex items-center justify-center gap-2">
+              <Shield className="w-4 h-4 text-slate-500" />
+              <span>Official certificates issued by E-Cell RGPV</span>
+            </p>
+          </div>
         </div>
       </div>
     </main>

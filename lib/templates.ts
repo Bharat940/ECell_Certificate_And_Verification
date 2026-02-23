@@ -34,4 +34,9 @@ export const TEMPLATE_OPTIONS: TemplateOption[] = [
         label: 'Hackathon',
         description: 'Achievement certificate for hackathons (Orange)',
     },
+    {
+        value: 'certificate-groomings.html',
+        label: 'Groomings',
+        description: 'Exclusive certificate for department groomings',
+    },
 ];

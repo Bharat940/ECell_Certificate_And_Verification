@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Groomings Certificate</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Arimo:ital,wght@0,400..700;1,400..700&family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&family=Lusitana:wght@400;700&family=Montserrat:ital,wght@0,100..900;1,100..900&family=Noto+Sans:ital,wght@0,100..900;1,100..900&family=Old+Standard+TT:ital,wght@0,400;0,700;1,400&family=Orbitron:wght@400..900&display=swap"
+        rel="stylesheet">
+
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        @page {
+            size: A4 landscape;
+            margin: 0;
+        }
+
+        body {
+            width: 1123px;
+            height: 794px;
+            position: relative;
+            background-image: url('http://localhost:3000/assets/groomings_certifiicate_image.jpeg');
+            background-size: contain;
+            background-position: center;
+            background-repeat: no-repeat;
+            transform-origin: top left;
+        }
+
+        @media screen {
+            body {
+                transform: scale(calc(min(90vw / 1123, 90vh / 794)));
+            }
+        }
+
+        .participant-name {
+            position: absolute;
+            top: 300px;
+            left: 50px;
+            width: 100%;
+            text-align: center;
+            text-transform: capitalize;
+
+            font-family: 'Old Standard TT', serif;
+            color: #99761b;
+            font-size: 60px;
+            font-weight: 700;
+        }
+
+        .department-name {
+            position: absolute;
+            top: 410px;
+            left: 15px;
+            width: 100%;
+            text-align: center;
+            padding: 0 50px;
+
+            font-family: 'Montserrat', sans-serif;
+            color: #3b3a3a;
+            font-size: 23px;
+            font-weight: 500;
+            line-height: 1.4;
+        }
+
+        .qr-section {
+            position: absolute;
+            bottom: 125px;
+            right: 120px;
+            text-align: center;
+        }
+
+        .qr-code {
+            width: 100px;
+            height: 100px;
+        }
+
+        .cert-number {
+            font-size: 13px;
+            color: #555;
+            font-family: 'Arimo', sans-serif;
+            margin-top: 8px;
+            font-weight: 600;
+        }
+
+        .issue-date-section {
+            position: absolute;
+            bottom: 175px;
+            left: 190px;
+
+            font-family: 'Arimo', sans-serif;
+            font-size: 18px;
+            color: #555;
+            font-weight: 400;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="participant-name">{{participantName}}</div>
+
+    <div id="raw-event-name" style="display: none;">{{eventName}}</div>
+
+    <div id="display-department" class="department-name"></div>
+
+    <div class="issue-date-section" id="display-date">
+        {{eventEndDate}}
+    </div>
+
+    <div class="qr-section">
+        <img src="{{qrCodeDataUrl}}" alt="QR Code" class="qr-code">
+        <div class="cert-number">{{certificateNumber}}</div>
+    </div>
+
+    <script>
+        const rawNameElement = document.getElementById('raw-event-name');
+        const displayElement = document.getElementById('display-department');
+
+        if (rawNameElement && displayElement) {
+            let rawText = rawNameElement.innerText.trim();
+            let cleanText = rawText.replace(/\s*Groomings(?:\s+\d{4})?$/i, '').toUpperCase();
+            displayElement.innerHTML = `for successfully completing the Grooming Sessions <br> in the <span style="font-weight: 700;">${cleanText}</span> Department.`;
+        }
+
+        const dateElement = document.getElementById('display-date');
+        if (dateElement) {
+            let rawDateStr = dateElement.innerText.trim();
+            let parsedDate = new Date(rawDateStr);
+
+            if (!isNaN(parsedDate)) {
+                let day = parsedDate.getDate();
+                let month = parsedDate.getMonth() + 1;
+                let year = parsedDate.getFullYear();
+
+                dateElement.innerText = `${day}/${month}/${year}`;
+            }
+        }
+    </script>
+</body>
+
+</html>

@@ -42,6 +42,12 @@ export const AVAILABLE_TEMPLATES: Template[] = [
         description: 'Dynamic orange theme for hackathons',
         color: '#f97316',
     },
+    {
+        name: 'Groomings',
+        filename: 'certificate-groomings.html',
+        description: 'Exclusive template for department groomings',
+        color: '#99761b',
+    },
 ];
 
 /**

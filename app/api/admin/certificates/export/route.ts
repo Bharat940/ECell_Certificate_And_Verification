@@ -13,7 +13,7 @@ import { logger } from '@/lib/logger';
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
-const BASE_URL = process.env.NEXT_PUBLIC_APP_URL || '';
+const BASE_URL = (process.env.NEXT_PUBLIC_APP_URL || '').replace(/\/+$/, '');
 
 export async function POST(request: NextRequest) {
     logger.apiRequest('POST', '/api/admin/certificates/export');

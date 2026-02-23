@@ -8,6 +8,7 @@ import { EventCard } from '@/components/EventCard';
 import { ConfirmDialog } from '@/components/ConfirmDialog';
 import { EventFormModal } from '@/components/EventFormModal';
 import { CertificateFormModal } from '@/components/CertificateFormModal';
+import Image from 'next/image';
 
 interface Event {
     id: string;
@@ -167,7 +168,7 @@ export default function AdminDashboard() {
                     certificateNumber: cert.certificateNumber,
                     participantName: cert.participantName,
                     certificateUrl: cert.certificateUrl,
-                    verificationUrl: `${window.location.origin}/verify/${cert.certificateNumber}`,
+                    verificationUrl: `${window.location.origin.replace(/\/+$/, '')}/verify/${cert.certificateNumber}`,
                 });
                 // Reset form
                 setParticipantName('');
@@ -311,11 +312,20 @@ export default function AdminDashboard() {
                 {/* Header */}
                 <div className="border-b border-slate-800/50 bg-slate-900/30 backdrop-blur-xl">
                     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-                        <div className="flex items-center justify-between">
-                            <h1 className="text-2xl font-bold text-white">Admin Dashboard</h1>
+                        <div className="flex flex-col sm:flex-row items-center justify-between gap-4 sm:gap-0">
+                            <div className="flex items-center gap-3 sm:gap-4">
+                                <Image
+                                    src="/assets/logo.png"
+                                    alt="E-Cell Logo"
+                                    width={32}
+                                    height={32}
+                                    className="object-contain sm:w-10 sm:h-10"
+                                />
+                                <h1 className="text-xl sm:text-2xl font-bold text-white">Admin Dashboard</h1>
+                            </div>
                             <button
                                 onClick={handleLogout}
-                                className="flex items-center gap-2 px-4 py-2 bg-slate-800/50 hover:bg-slate-800 text-white rounded-lg transition-all border border-slate-700 cursor-pointer"
+                                className="flex items-center gap-2 px-3 sm:px-4 py-2 bg-slate-800/50 hover:bg-slate-800 text-white rounded-lg transition-all border border-slate-700 cursor-pointer text-sm sm:text-base w-full sm:w-auto justify-center"
                             >
                                 <LogOut className="w-4 h-4" />
                                 Logout
@@ -325,20 +335,20 @@ export default function AdminDashboard() {
                 </div>
 
                 {/* Main Content */}
-                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
                     {/* Action Cards */}
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6 mb-6 sm:mb-8">
                         <button
                             onClick={() => setShowEventForm(true)}
-                            className="bg-slate-900/50 backdrop-blur-xl rounded-2xl p-6 border border-slate-800/50 hover:border-blue-900/50 transition-all text-left group cursor-pointer"
+                            className="bg-slate-900/50 backdrop-blur-xl rounded-xl sm:rounded-2xl p-4 sm:p-6 border border-slate-800/50 hover:border-blue-900/50 transition-all text-left group cursor-pointer"
                         >
-                            <div className="flex items-center gap-4">
-                                <div className="w-12 h-12 bg-gradient-to-br from-blue-600 to-cyan-600 rounded-full flex items-center justify-center group-hover:scale-110 transition-transform">
-                                    <Calendar className="w-6 h-6 text-white" />
+                            <div className="flex items-center gap-3 sm:gap-4">
+                                <div className="w-10 h-10 sm:w-12 sm:h-12 bg-gradient-to-br from-blue-600 to-cyan-600 rounded-full flex items-center justify-center shrink-0 group-hover:scale-110 transition-transform">
+                                    <Calendar className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
                                 </div>
                                 <div>
-                                    <h3 className="text-lg font-semibold text-white">Create Event</h3>
-                                    <p className="text-slate-400 text-sm">Add a new event to the system</p>
+                                    <h3 className="text-base sm:text-lg font-semibold text-white">Create Event</h3>
+                                    <p className="text-slate-400 text-xs sm:text-sm">Add a new event to the system</p>
                                 </div>
                             </div>
                         </button>
@@ -346,15 +356,15 @@ export default function AdminDashboard() {
                         <button
                             onClick={() => setShowCertForm(true)}
                             disabled={events.length === 0}
-                            className="bg-slate-900/50 backdrop-blur-xl rounded-2xl p-6 border border-slate-800/50 hover:border-cyan-900/50 transition-all text-left group disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+                            className="bg-slate-900/50 backdrop-blur-xl rounded-xl sm:rounded-2xl p-4 sm:p-6 border border-slate-800/50 hover:border-cyan-900/50 transition-all text-left group disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
                         >
-                            <div className="flex items-center gap-4">
-                                <div className="w-12 h-12 bg-gradient-to-br from-cyan-600 to-blue-600 rounded-full flex items-center justify-center group-hover:scale-110 transition-transform">
-                                    <FileText className="w-6 h-6 text-white" />
+                            <div className="flex items-center gap-3 sm:gap-4">
+                                <div className="w-10 h-10 sm:w-12 sm:h-12 bg-gradient-to-br from-cyan-600 to-blue-600 rounded-full flex items-center justify-center shrink-0 group-hover:scale-110 transition-transform">
+                                    <FileText className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
                                 </div>
                                 <div>
-                                    <h3 className="text-lg font-semibold text-white">Generate Certificate</h3>
-                                    <p className="text-slate-400 text-sm">
+                                    <h3 className="text-base sm:text-lg font-semibold text-white">Generate Certificate</h3>
+                                    <p className="text-slate-400 text-xs sm:text-sm">
                                         {events.length === 0 ? 'Create an event first' : 'Create a new certificate'}
                                     </p>
                                 </div>
@@ -363,14 +373,14 @@ export default function AdminDashboard() {
                     </div>
 
                     {/* Events List */}
-                    <div className="bg-slate-900/50 backdrop-blur-xl rounded-2xl p-6 border border-slate-800/50">
-                        <h2 className="text-xl font-bold text-white mb-4">Recent Events</h2>
+                    <div className="bg-slate-900/50 backdrop-blur-xl rounded-xl sm:rounded-2xl p-4 sm:p-6 border border-slate-800/50">
+                        <h2 className="text-lg sm:text-xl font-bold text-white mb-4">Recent Events</h2>
                         {isLoading ? (
                             <p className="text-slate-400">Loading events...</p>
                         ) : events.length === 0 ? (
                             <p className="text-slate-400">No events yet. Create your first event!</p>
                         ) : (
-                            <div className="space-y-3">
+                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
                                 {events.map((event) => (
                                     <EventCard
                                         key={event.id}

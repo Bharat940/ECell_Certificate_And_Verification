@@ -8,6 +8,7 @@ import toast from 'react-hot-toast';
 import { CertificateTable } from '@/components/CertificateTable';
 import { ImportCertificatesModal } from '@/components/ImportCertificatesModal';
 import { ConfirmDialog } from '@/components/ConfirmDialog';
+import { CertificateFormModal } from '@/components/CertificateFormModal';
 import { formatDateRange } from '@/lib/dateUtils';
 
 interface PageProps {
@@ -53,6 +54,20 @@ export default function EventCertificatesPage({ params }: PageProps) {
     const [isExporting, setIsExporting] = useState(false);
     const [searchTerm, setSearchTerm] = useState('');
 
+    // Single Certificate Form State
+    const [showCertForm, setShowCertForm] = useState(false);
+    const [participantName, setParticipantName] = useState('');
+    const [participantEmail, setParticipantEmail] = useState('');
+    const [isGenerating, setIsGenerating] = useState(false);
+    const [certError, setCertError] = useState('');
+    const [generatedCert, setGeneratedCert] = useState<{
+        certificateNumber: string;
+        participantName: string;
+        certificateUrl: string;
+        verificationUrl: string;
+    } | null>(null);
+    const [selectedFormEventId, setSelectedFormEventId] = useState('');
+
     const filteredCertificates = certificates.filter(cert =>
         cert.participantName.toLowerCase().includes(searchTerm.toLowerCase()) ||
         cert.participantEmail?.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -64,6 +79,7 @@ export default function EventCertificatesPage({ params }: PageProps) {
     useEffect(() => {
         params.then(({ eventId: id }) => {
             setEventId(id);
+            setSelectedFormEventId(id);
             fetchCertificates(id);
         });
     }, [params]);
@@ -122,6 +138,64 @@ export default function EventCertificatesPage({ params }: PageProps) {
         } finally {
             setIsDeleting(false);
         }
+    };
+
+    const handleGenerateCertificate = async (e: React.FormEvent<HTMLFormElement>) => {
+        e.preventDefault();
+        setCertError('');
+        setIsGenerating(true);
+
+        try {
+            const response = await fetch('/api/admin/certificates', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                credentials: 'include',
+                body: JSON.stringify({
+                    eventId: selectedFormEventId || eventId,
+                    participantName: participantName,
+                    participantEmail: participantEmail || undefined,
+                }),
+            });
+
+            const data = await response.json();
+
+            if (response.ok && data.success) {
+                const cert = data.certificate;
+                setGeneratedCert({
+                    certificateNumber: cert.certificateNumber,
+                    participantName: cert.participantName,
+                    certificateUrl: cert.certificateUrl,
+                    verificationUrl: `${window.location.origin.replace(/\/+$/, '')}/verify/${cert.certificateNumber}`,
+                });
+                // Reset form
+                setParticipantName('');
+                setParticipantEmail('');
+                toast.success('Certificate generated successfully!');
+                await fetchCertificates(eventId); // refresh list
+            } else {
+                setCertError(data.error || 'Failed to generate certificate');
+                toast.error(data.error || 'Failed to generate certificate');
+            }
+        } catch (error) {
+            setCertError('Network error. Please try again.');
+            toast.error('Network error. Please try again.');
+        } finally {
+            setIsGenerating(false);
+        }
+    };
+
+    const copyToClipboard = (text: string) => {
+        navigator.clipboard.writeText(text);
+        toast.success('Copied to clipboard!');
+    };
+
+    const closeCertForm = () => {
+        setShowCertForm(false);
+        setCertError('');
+        setGeneratedCert(null);
+        setParticipantName('');
+        setParticipantEmail('');
+        setSelectedFormEventId(eventId);
     };
 
     // Bulk delete functions
@@ -340,11 +414,20 @@ export default function EventCertificatesPage({ params }: PageProps) {
                                 <ArrowLeft className="w-6 h-6" />
                             </Link>
                             <div>
-                                <h1 className="text-2xl font-bold text-white">Event Certificates</h1>
+                                <h1 className="text-2xl sm:text-3xl font-bold text-white tracking-tight">
+                                    {event ? event.title : 'Event Certificates'}
+                                </h1>
                                 {event && (
-                                    <p className="text-slate-400 text-sm mt-1">
-                                        {formatDateRange(new Date(event.startDate), new Date(event.endDate))}
-                                    </p>
+                                    <div className="flex flex-wrap items-center gap-3 mt-2 text-slate-400 text-sm">
+                                        <span className="flex items-center gap-1.5 bg-slate-800/50 border border-slate-700/50 px-2.5 py-1 rounded-md">
+                                            <Calendar className="w-3.5 h-3.5 text-blue-400" />
+                                            {formatDateRange(new Date(event.startDate), new Date(event.endDate))}
+                                        </span>
+                                        <span className="flex items-center gap-1.5 bg-slate-800/50 border border-slate-700/50 px-2.5 py-1 rounded-md">
+                                            <User className="w-3.5 h-3.5 text-cyan-400" />
+                                            {event.organizer}
+                                        </span>
+                                    </div>
                                 )}
                             </div>
                         </div>
@@ -363,34 +446,41 @@ export default function EventCertificatesPage({ params }: PageProps) {
                         </div>
                     ) : (
                         <>
-                            {/* Event Info Card */}
+                            {/* Event Info Metrics */}
                             {event && (
-                                <div className="bg-slate-900/50 backdrop-blur-xl rounded-2xl p-6 border border-slate-800/50 mb-6">
-                                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                                        <div className="flex items-start gap-3">
-                                            <Calendar className="w-5 h-5 text-blue-400 mt-0.5" />
-                                            <div>
-                                                <p className="text-slate-400 text-sm">Event Date</p>
-                                                <p className="text-white font-semibold">
-                                                    {formatDateRange(new Date(event.startDate), new Date(event.endDate))}
-                                                </p>
-                                            </div>
+                                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+                                    <div className="bg-slate-900/50 backdrop-blur-xl rounded-xl p-4 border border-slate-800/50 flex items-center gap-4 hover:bg-slate-800/50 transition-colors">
+                                        <div className="w-10 h-10 bg-blue-500/10 rounded-full flex items-center justify-center shrink-0">
+                                            <FileText className="w-5 h-5 text-blue-400" />
                                         </div>
-                                        <div className="flex items-start gap-3">
-                                            <User className="w-5 h-5 text-cyan-400 mt-0.5" />
-                                            <div>
-                                                <p className="text-slate-400 text-sm">Organizer</p>
-                                                <p className="text-white font-semibold">{event.organizer}</p>
-                                            </div>
-                                        </div>
-                                        <div className="flex items-start gap-3">
-                                            <FileText className="w-5 h-5 text-green-400 mt-0.5" />
-                                            <div>
-                                                <p className="text-slate-400 text-sm">Total Certificates</p>
-                                                <p className="text-white font-semibold">{certificates.length}</p>
-                                            </div>
+                                        <div>
+                                            <h3 className="text-2xl font-bold text-white leading-none">{certificates.length}</h3>
+                                            <p className="text-slate-400 text-xs mt-1 font-medium">Total Certificates</p>
                                         </div>
                                     </div>
+                                    <div className="bg-slate-900/50 backdrop-blur-xl rounded-xl p-4 border border-slate-800/50 flex items-center gap-4 hover:bg-slate-800/50 transition-colors">
+                                        <div className="w-10 h-10 bg-cyan-500/10 rounded-full flex items-center justify-center shrink-0">
+                                            <User className="w-5 h-5 text-cyan-400" />
+                                        </div>
+                                        <div>
+                                            <h3 className="text-2xl font-bold text-white leading-none">
+                                                {new Set(certificates.map(c => c.participantEmail || c.participantName)).size}
+                                            </h3>
+                                            <p className="text-slate-400 text-xs mt-1 font-medium">Unique Participants</p>
+                                        </div>
+                                    </div>
+                                    <button
+                                        onClick={() => setShowCertForm(true)}
+                                        className="bg-slate-900/50 backdrop-blur-xl rounded-xl p-4 border border-slate-800/50 flex items-center gap-4 hover:bg-slate-800/50 hover:border-cyan-500/50 transition-all text-left group cursor-pointer"
+                                    >
+                                        <div className="w-10 h-10 bg-gradient-to-br from-cyan-600 to-blue-600 rounded-full flex items-center justify-center shrink-0 group-hover:scale-110 transition-transform">
+                                            <FileText className="w-5 h-5 text-white" />
+                                        </div>
+                                        <div>
+                                            <h3 className="text-lg font-bold text-white leading-tight">Add Certificate</h3>
+                                            <p className="text-slate-400 text-xs font-medium mt-1">Single Entry</p>
+                                        </div>
+                                    </button>
                                 </div>
                             )}
 
@@ -534,6 +624,28 @@ Type "DELETE ALL" to confirm:`}
                 eventId={eventId}
                 eventTitle={event?.title}
                 onSuccess={() => fetchCertificates(eventId)}
+            />
+
+            {/* Certificate Form Modal */}
+            <CertificateFormModal
+                isOpen={showCertForm}
+                onClose={closeCertForm}
+                onSubmit={handleGenerateCertificate}
+                isLoading={isGenerating}
+                error={certError}
+                events={event ? [event] : []}
+                formData={{
+                    selectedEventId: selectedFormEventId || eventId,
+                    participantName: participantName,
+                    participantEmail: participantEmail,
+                }}
+                onFormChange={{
+                    setSelectedEventId: setSelectedFormEventId,
+                    setParticipantName: setParticipantName,
+                    setParticipantEmail: setParticipantEmail,
+                }}
+                generatedCert={generatedCert}
+                onCopyToClipboard={copyToClipboard}
             />
         </div>
     );

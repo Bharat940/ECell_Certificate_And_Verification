@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { CheckCircle2, XCircle, Info, ArrowLeft, Calendar, User, Hash, Download, ExternalLink, Copy } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { formatDateRange } from '@/lib/dateUtils';
+import Image from 'next/image';
 
 interface VerifyPageProps {
     params: Promise<{
@@ -67,36 +68,44 @@ export default function VerifyPage({ params }: VerifyPageProps) {
     };
 
     return (
-        <main className="min-h-screen bg-slate-950 flex items-center justify-center p-4 relative overflow-hidden">
-            {/* Subtle background pattern */}
-            <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,var(--tw-gradient-stops))] from-blue-900/20 via-slate-950 to-slate-950"></div>
+        <main className="min-h-screen bg-slate-950 flex flex-col items-center justify-center p-4 relative overflow-hidden font-sans">
+            <div className="absolute inset-0 bg-[radial-gradient(#334155_1px,transparent_1px)] [background-size:16px_16px] opacity-20"></div>
 
-            {/* Accent glow effects */}
-            <div className="absolute top-1/4 -left-48 w-96 h-96 bg-blue-600/10 rounded-full blur-3xl"></div>
-            <div className="absolute bottom-1/4 -right-48 w-96 h-96 bg-cyan-600/10 rounded-full blur-3xl"></div>
-
-            <div className="w-full max-w-3xl relative z-10">
-                {/* Header */}
-                <div className="text-center mb-6 sm:mb-8">
-                    <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold text-white mb-4 tracking-tight px-4">
-                        Certificate Verification
-                    </h1>
-                    <div className="inline-flex items-center gap-2 bg-slate-900/50 backdrop-blur-sm px-4 sm:px-6 py-2 sm:py-3 rounded-full border border-slate-800 flex-wrap justify-center">
-                        <span className="text-slate-400 text-xs sm:text-sm">Certificate Number:</span>
-                        <span className="font-mono text-blue-400 font-semibold tracking-wider text-sm sm:text-base">{certificateNumber}</span>
-                        <button
-                            onClick={() => copyToClipboard(certificateNumber, 'Certificate number')}
-                            className="text-slate-400 hover:text-white transition-colors cursor-pointer ml-1 p-1"
-                            title="Copy certificate number"
-                            aria-label="Copy certificate number"
-                        >
-                            <Copy className="w-4 h-4" />
-                        </button>
+            <div className="w-full max-w-3xl relative z-10 mx-auto">
+                <div className="flex flex-col items-center mb-8">
+                    <div className="mb-8">
+                        <Image
+                            src="/assets/ECell_Full_Logo.png"
+                            alt="E-Cell Logo"
+                            width={160}
+                            height={60}
+                            className="h-10 sm:h-14 w-auto drop-shadow-sm opacity-90"
+                            priority
+                        />
+                    </div>
+                    <div className="text-center">
+                        <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold text-white mb-4 tracking-tight px-4">
+                            Certificate Verification
+                        </h1>
+                        <div className="inline-flex items-center gap-2 bg-slate-900/80 backdrop-blur-md px-4 sm:px-6 py-2 sm:py-2.5 rounded-full border border-slate-800 flex-wrap justify-center shadow-sm">
+                            <span className="text-slate-400 text-xs sm:text-sm font-medium">Certificate Number:</span>
+                            <span className="font-mono text-white font-semibold tracking-wider text-sm sm:text-base">{certificateNumber}</span>
+                            {(!data || data.valid || isLoading) && (
+                                <button
+                                    onClick={() => copyToClipboard(certificateNumber, 'Certificate number')}
+                                    className="text-slate-400 hover:text-white transition-colors cursor-pointer ml-1 p-1"
+                                    title="Copy certificate number"
+                                    aria-label="Copy certificate number"
+                                >
+                                    <Copy className="w-4 h-4" />
+                                </button>
+                            )}
+                        </div>
                     </div>
                 </div>
 
-                {/* Verification Card */}
-                <div className="bg-slate-900/50 backdrop-blur-xl rounded-2xl p-6 sm:p-10 shadow-2xl border border-slate-800/50">
+                <div className="bg-slate-900/80 backdrop-blur-xl rounded-2xl sm:rounded-3xl p-6 sm:p-8 md:p-10 shadow-[0_8px_30px_rgb(0,0,0,0.5)] border border-slate-800 relative overflow-hidden">
+                    <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-blue-600 via-cyan-500 to-blue-600"></div>
                     {isLoading ? (
                         <div className="text-center space-y-4">
                             <div className="w-16 h-16 border-4 border-blue-600/30 border-t-blue-600 rounded-full animate-spin mx-auto"></div>
@@ -104,14 +113,12 @@ export default function VerifyPage({ params }: VerifyPageProps) {
                         </div>
                     ) : data?.valid ? (
                         <div className="space-y-8">
-                            {/* Success Icon */}
                             <div className="flex justify-center">
-                                <div className="w-28 h-28 bg-gradient-to-br from-green-600 to-emerald-600 rounded-full flex items-center justify-center shadow-lg shadow-green-900/50">
-                                    <CheckCircle2 className="w-14 h-14 text-white" strokeWidth={2} />
+                                <div className="w-20 h-20 bg-emerald-500/10 rounded-full flex items-center justify-center border border-emerald-500/20 mb-2">
+                                    <CheckCircle2 className="w-10 h-10 text-emerald-400" strokeWidth={2} />
                                 </div>
                             </div>
 
-                            {/* Certificate Details */}
                             <div className="space-y-6 text-center">
                                 <h2 className="text-3xl font-bold text-white">
                                     Certificate Verified
@@ -169,39 +176,63 @@ export default function VerifyPage({ params }: VerifyPageProps) {
                                     </div>
                                 </div>
 
-                                {/* Download Button */}
                                 {data.certificate?.certificateUrl && (
-                                    <a
-                                        href={data.certificate.certificateUrl}
-                                        target="_blank"
-                                        rel="noopener noreferrer"
-                                        className="inline-flex items-center justify-center gap-2 bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 active:scale-[0.98] text-white font-semibold py-3 px-6 sm:px-8 rounded-xl transition-all duration-300 shadow-lg shadow-green-900/30 cursor-pointer text-sm sm:text-base w-full sm:w-auto"
+                                    <button
+                                        onClick={async () => {
+                                            if (!data.certificate?.certificateUrl) return;
+                                            try {
+                                                const toastId = toast.loading('Initiating download...');
+
+                                                const response = await fetch(data.certificate.certificateUrl);
+                                                if (!response.ok) throw new Error('Failed to fetch certificate');
+
+                                                const blob = await response.blob();
+                                                const blobUrl = window.URL.createObjectURL(blob);
+
+                                                const a = document.createElement('a');
+                                                a.style.display = 'none';
+                                                a.href = blobUrl;
+                                                const safeName = data.certificate.participantName.replace(/[^a-z0-9]/gi, '_');
+                                                a.download = `${safeName}_${data.certificate.certificateNumber}.pdf`;
+
+                                                document.body.appendChild(a);
+                                                a.click();
+
+                                                window.URL.revokeObjectURL(blobUrl);
+                                                document.body.removeChild(a);
+                                                toast.success('Download started!', { id: toastId });
+                                            } catch (error) {
+                                                console.error('Download error:', error);
+                                                const attachUrl = data.certificate.certificateUrl.replace('/upload/', '/upload/fl_attachment/');
+                                                window.open(attachUrl, '_blank');
+                                            }
+                                        }}
+                                        className="inline-flex items-center justify-center gap-2 bg-slate-800 hover:bg-slate-700 active:scale-[0.98] text-white font-medium py-3 px-6 sm:px-8 rounded-xl transition-all duration-300 border border-slate-700 hover:border-slate-600 shadow-md cursor-pointer text-sm sm:text-base w-full sm:w-auto mt-4"
                                     >
-                                        <Download className="w-5 h-5 shrink-0" />
-                                        <span>Download Certificate PDF</span>
-                                    </a>
+                                        <Download className="w-4 h-4 shrink-0" />
+                                        <span>Download Certificate</span>
+                                    </button>
                                 )}
                             </div>
 
-                            {/* PDF Preview */}
                             {data.certificate?.certificateUrl && (
-                                <div className="bg-slate-800/50 border border-slate-700/50 rounded-xl p-4">
-                                    <div className="flex items-center justify-between mb-3">
-                                        <h3 className="text-white font-semibold">Certificate Preview</h3>
+                                <div className="bg-slate-950/50 border border-slate-800/80 rounded-xl p-3 sm:p-4 mt-8">
+                                    <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-0 mb-3">
+                                        <h3 className="text-white font-medium text-sm">Certificate Preview</h3>
                                         <a
                                             href={data.certificate.certificateUrl}
                                             target="_blank"
                                             rel="noopener noreferrer"
-                                            className="text-blue-400 hover:text-blue-300 text-sm flex items-center gap-1 cursor-pointer"
+                                            className="text-slate-400 hover:text-white transition-colors text-sm flex items-center gap-1.5 cursor-pointer w-full sm:w-auto bg-slate-800 hover:bg-slate-700 py-1.5 px-3 rounded-lg border border-slate-700"
                                         >
-                                            <ExternalLink className="w-4 h-4" />
-                                            Open in new tab
+                                            <ExternalLink className="w-3.5 h-3.5" />
+                                            Open PDF
                                         </a>
                                     </div>
-                                    <div className="bg-slate-900 rounded-lg overflow-hidden">
+                                    <div className="bg-slate-900 rounded-lg overflow-hidden relative w-full pt-[70%] sm:pt-0 sm:h-[600px] border border-slate-800">
                                         <iframe
-                                            src={data.certificate.certificateUrl}
-                                            className="w-full h-[500px] border-0"
+                                            src={`https://docs.google.com/viewer?url=${encodeURIComponent(data.certificate.certificateUrl)}&embedded=true`}
+                                            className="absolute top-0 left-0 w-full h-full sm:relative sm:w-full sm:h-full border-0"
                                             title="Certificate Preview"
                                         />
                                     </div>
@@ -209,27 +240,25 @@ export default function VerifyPage({ params }: VerifyPageProps) {
                             )}
                         </div>
                     ) : (
-                        <div className="text-center space-y-8">
-                            {/* Error Icon */}
+                        <div className="text-center space-y-8 py-4">
                             <div className="flex justify-center">
-                                <div className="w-28 h-28 bg-gradient-to-br from-red-600 to-rose-600 rounded-full flex items-center justify-center shadow-lg shadow-red-900/50">
-                                    <XCircle className="w-14 h-14 text-white" strokeWidth={2} />
+                                <div className="w-20 h-20 bg-rose-500/10 rounded-full flex items-center justify-center border border-rose-500/20 mb-2">
+                                    <XCircle className="w-10 h-10 text-rose-400" strokeWidth={2} />
                                 </div>
                             </div>
 
-                            {/* Error Message */}
-                            <div className="space-y-4">
-                                <h2 className="text-3xl font-bold text-white">
+                            <div className="space-y-4 max-w-lg mx-auto">
+                                <h2 className="text-2xl font-bold text-white">
                                     Certificate Not Found
                                 </h2>
-                                <p className="text-slate-400 text-lg">
+                                <p className="text-slate-400 text-base">
                                     {data?.message || data?.error || 'This certificate number is not registered in our system.'}
                                 </p>
-                                <div className="bg-red-950/50 border border-red-900/50 rounded-xl p-6 mt-6 backdrop-blur-sm">
+                                <div className="bg-slate-950/50 border border-slate-800 rounded-xl p-5 mt-8 text-left">
                                     <div className="flex items-start gap-3">
-                                        <Info className="w-5 h-5 text-red-400 mt-0.5 shrink-0" />
-                                        <p className="text-red-200 text-sm text-left">
-                                            Please verify the certificate number and try again. If you believe this is an error, contact the event organizers.
+                                        <Info className="w-5 h-5 text-slate-500 shrink-0" />
+                                        <p className="text-slate-400 text-sm leading-relaxed">
+                                            Please verify the certificate number carefully. If you believe this is an error and you successfully participated in the event, please contact the E-Cell RGPV team.
                                         </p>
                                     </div>
                                 </div>
@@ -237,7 +266,6 @@ export default function VerifyPage({ params }: VerifyPageProps) {
                         </div>
                     )}
 
-                    {/* Back Button */}
                     <div className="pt-8 text-center">
                         <Link
                             href="/"
