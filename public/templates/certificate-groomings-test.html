@@ -42,8 +42,8 @@
 
         .participant-name {
             position: absolute;
-            top: 300px;
-            left: 50px;
+            top: 320px;
+            left: 0;
             width: 100%;
             text-align: center;
             text-transform: capitalize;
@@ -56,21 +56,21 @@
         .department-name {
             position: absolute;
             top: 410px;
-            left: 15px;
-            width: 100%;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 790px;
             text-align: center;
-            padding: 0 50px;
             font-family: 'Montserrat', sans-serif;
             color: #3b3a3a;
-            font-size: 23px;
+            font-size: 22px;
             font-weight: 500;
             line-height: 1.4;
         }
 
         .qr-section {
             position: absolute;
-            bottom: 125px;
-            right: 120px;
+            bottom: 130px;
+            right: 150px;
             text-align: center;
         }
 
@@ -86,16 +86,6 @@
             margin-top: 8px;
             font-weight: 600;
         }
-
-        .issue-date-section {
-            position: absolute;
-            bottom: 175px;
-            left: 190px;
-            font-family: 'Arimo', sans-serif;
-            font-size: 18px;
-            color: #555;
-            font-weight: 400;
-        }
     </style>
 </head>
 
@@ -103,9 +93,6 @@
     <div class="participant-name">John Doe</div>
     <div id="raw-event-name" style="display: none;">Public Relations Groomings</div>
     <div id="display-department" class="department-name"></div>
-    <div class="issue-date-section">
-        February 15, 2026
-    </div>
     <div class="qr-section">
         <img src="../assets/test_qr.jpeg" alt="QR Code" class="qr-code">
         <div class="cert-number">CERT-123456789</div>
@@ -118,7 +105,7 @@
         if (rawNameElement && displayElement) {
             let rawText = rawNameElement.innerText.trim();
             let cleanText = rawText.replace(/\s*Groomings(?:\s+\d{4})?$/i, '').toUpperCase();
-            displayElement.innerHTML = `for successfully completing the Grooming Sessions <br> in the <span style="font-weight: 700;">${cleanText}</span> Department.`;
+            displayElement.innerHTML = `for successfully completing the Grooming Sessions in the <span style="font-weight: 700;">${cleanText}</span>. E-Cell RGPV commends your dedication and extends its best wishes for all your future endeavors.`;
         }
     </script>
 </body>

@@ -382,7 +382,8 @@ export default function EventCertificatesPage({ params }: PageProps) {
             }
             const blob = await res.blob();
             const ext = format === 'csv' ? 'csv' : 'xlsx';
-            const filename = `certificates-export-${Date.now()}.${ext}`;
+            const safeEventName = event?.title ? event.title.replace(/[^a-z0-9]/gi, '_').toLowerCase() : 'event';
+            const filename = `${safeEventName}-certificates.${ext}`;
             const url = URL.createObjectURL(blob);
             const a = document.createElement('a');
             a.href = url;
