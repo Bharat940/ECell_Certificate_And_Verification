@@ -1,6 +1,6 @@
 'use client';
 
-import { Download, ExternalLink, Copy, Calendar, User, Hash, Trash2, FileDown } from 'lucide-react';
+import { Download, ExternalLink, Copy, Calendar, User, Hash, Trash2, FileDown, Mail } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 interface Certificate {
@@ -11,6 +11,9 @@ interface Certificate {
     certificateUrl: string;
     issuedAt: string;
     verificationUrl: string;
+    emailStatus?: 'sent' | 'failed' | 'pending' | null;
+    emailSentAt?: string | null;
+    emailError?: string | null;
 }
 
 interface CertificateTableProps {
@@ -21,6 +24,7 @@ interface CertificateTableProps {
     onDelete: (id: string) => void;
     onBulkDelete: () => void;
     onExportSelected: (format: 'csv' | 'xlsx') => void;
+    onSendEmail: (certificate: Certificate) => void;
     isLoading?: boolean;
 }
 
@@ -32,6 +36,7 @@ export function CertificateTable({
     onDelete,
     onBulkDelete,
     onExportSelected,
+    onSendEmail,
     isLoading = false,
 }: CertificateTableProps) {
     const allSelected = certificates.length > 0 && certificates.every(c => selectedIds.has(c.id));
@@ -78,7 +83,7 @@ export function CertificateTable({
                         className="flex items-center gap-2 px-3 py-2 bg-slate-700/50 hover:bg-slate-700 text-white rounded-lg transition-colors text-sm disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
                         title="Export selected as CSV"
                     >
-                        <FileDown className="w-4 h-4" />
+                        <Download className="w-4 h-4" />
                         CSV
                     </button>
                     <button
@@ -88,7 +93,7 @@ export function CertificateTable({
                         className="flex items-center gap-2 px-3 py-2 bg-slate-700/50 hover:bg-slate-700 text-white rounded-lg transition-colors text-sm disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
                         title="Export selected as XLSX"
                     >
-                        <FileDown className="w-4 h-4" />
+                        <Download className="w-4 h-4" />
                         XLSX
                     </button>
                     <button
@@ -118,6 +123,7 @@ export function CertificateTable({
                             </th>
                             <th className="p-3">Participant</th>
                             <th className="p-3">Certificate #</th>
+                            <th className="p-3">Email Status</th>
                             <th className="p-3">Issued</th>
                             <th className="p-3 text-right">Actions</th>
                         </tr>
@@ -166,13 +172,43 @@ export function CertificateTable({
                                     </div>
                                 </td>
                                 <td className="p-3">
+                                    <div className="flex items-center gap-2">
+                                        {cert.emailStatus === 'sent' ? (
+                                            <span className="flex items-center whitespace-nowrap gap-1.5 px-2 py-1 bg-emerald-950/50 text-emerald-400 rounded text-xs border border-emerald-900/50" title={cert.emailSentAt ? new Date(cert.emailSentAt).toLocaleString() : ''}>
+                                                <div className="w-1.5 h-1.5 shrink-0 rounded-full bg-emerald-400"></div> Sent
+                                            </span>
+                                        ) : cert.emailStatus === 'failed' ? (
+                                            <span className="flex items-center whitespace-nowrap gap-1.5 px-2 py-1 bg-red-950/50 text-red-400 rounded text-xs border border-red-900/50" title={cert.emailError || 'Failed to send'}>
+                                                <div className="w-1.5 h-1.5 shrink-0 rounded-full bg-red-400"></div> Failed
+                                            </span>
+                                        ) : !cert.participantEmail ? (
+                                            <span className="flex items-center whitespace-nowrap gap-1.5 px-2 py-1 bg-slate-900 text-slate-500 rounded text-xs border border-slate-800" title="No email address">
+                                                <div className="w-1.5 h-1.5 shrink-0 rounded-full bg-slate-600"></div> No Email
+                                            </span>
+                                        ) : (
+                                            <span className="flex items-center whitespace-nowrap gap-1.5 px-2 py-1 bg-slate-800 text-slate-400 rounded text-xs border border-slate-700">
+                                                <div className="w-1.5 h-1.5 shrink-0 rounded-full bg-slate-400"></div> Not Sent
+                                            </span>
+                                        )}
+                                    </div>
+                                </td>
+                                <td className="p-3">
                                     <div className="flex items-center gap-2 text-slate-400">
                                         <Calendar className="w-4 h-4 shrink-0" />
                                         {new Date(cert.issuedAt).toLocaleDateString()}
                                     </div>
                                 </td>
                                 <td className="p-3 text-right">
-                                    <div className="flex items-center justify-end gap-2 flex-wrap">
+                                    <div className="flex items-center justify-end gap-1.5 sm:gap-2 flex-nowrap min-w-max">
+                                        <button
+                                            type="button"
+                                            onClick={() => onSendEmail(cert)}
+                                            className="flex items-center gap-1.5 px-2 py-1.5 bg-blue-900/40 hover:bg-blue-600/50 text-blue-300 hover:text-white border border-blue-800/50 rounded transition-colors text-xs cursor-pointer"
+                                            title="Send Email"
+                                        >
+                                            <Mail className="w-3.5 h-3.5" />
+                                            <span className="hidden xl:inline">Email</span>
+                                        </button>
                                         <button
                                             type="button"
                                             onClick={() => copyToClipboard(cert.verificationUrl, 'Verification link')}
@@ -180,7 +216,7 @@ export function CertificateTable({
                                             title="Copy verification URL"
                                         >
                                             <Copy className="w-3.5 h-3.5" />
-                                            <span className="hidden sm:inline">Copy link</span>
+                                            <span className="hidden xl:inline">Copy link</span>
                                         </button>
                                         <a
                                             href={cert.certificateUrl}
@@ -190,7 +226,7 @@ export function CertificateTable({
                                             title="Download PDF"
                                         >
                                             <Download className="w-3.5 h-3.5" />
-                                            <span className="hidden sm:inline">PDF</span>
+                                            <span className="hidden xl:inline">PDF</span>
                                         </a>
                                         <a
                                             href={cert.verificationUrl}
@@ -200,7 +236,7 @@ export function CertificateTable({
                                             title="View certificate"
                                         >
                                             <ExternalLink className="w-3.5 h-3.5" />
-                                            <span className="hidden sm:inline">View</span>
+                                            <span className="hidden xl:inline">View</span>
                                         </a>
                                         <button
                                             type="button"
@@ -209,7 +245,7 @@ export function CertificateTable({
                                             title="Delete certificate"
                                         >
                                             <Trash2 className="w-3.5 h-3.5" />
-                                            <span className="hidden sm:inline">Delete</span>
+                                            <span className="hidden xl:inline">Delete</span>
                                         </button>
                                     </div>
                                 </td>

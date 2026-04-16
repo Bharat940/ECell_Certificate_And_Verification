@@ -37,7 +37,7 @@ export async function GET(
         // Get all certificates for this event
         const certificates = await Certificate.find({ eventId })
             .sort({ issuedAt: -1 })
-            .select('certificateNumber participantName certificateUrl issuedAt verificationHash');
+            .select('certificateNumber participantName participantEmail certificateUrl issuedAt verificationHash emailStatus emailSentAt emailError');
 
         logger.apiSuccess('GET', '/api/admin/events/[eventId]/certificates', {
             eventId,
@@ -61,6 +61,9 @@ export async function GET(
                 certificateUrl: cert.certificateUrl,
                 verificationUrl: `${(process.env.NEXT_PUBLIC_APP_URL || '').replace(/\/+$/, '')}/verify/${cert.certificateNumber}`,
                 issuedAt: cert.issuedAt.toISOString(),
+                emailStatus: cert.emailStatus,
+                emailSentAt: cert.emailSentAt ? cert.emailSentAt.toISOString() : undefined,
+                emailError: cert.emailError,
             })),
         });
     } catch (error: any) {

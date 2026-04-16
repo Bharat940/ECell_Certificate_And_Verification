@@ -7,6 +7,10 @@ export interface IEvent {
     endDate: Date;
     organizer: string;
     template: string;
+    emailTemplate?: {
+        subject: string;
+        body: string;
+    };
     createdAt: Date;
     updatedAt: Date;
 }
@@ -36,6 +40,10 @@ const EventSchema = new Schema<IEvent>(
             required: [true, 'Certificate template is required'],
             default: 'certificate-default.html',
             trim: true,
+        },
+        emailTemplate: {
+            subject: { type: String, trim: true },
+            body: { type: String },
         },
     },
     {

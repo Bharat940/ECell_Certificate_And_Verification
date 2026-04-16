@@ -10,6 +10,9 @@ export interface ICertificate {
     certificateUrl: string;
     cloudinaryPublicId: string;
     verificationHash: string;
+    emailSentAt?: Date;
+    emailStatus?: 'sent' | 'failed' | 'pending';
+    emailError?: string;
     issuedAt: Date;
     createdAt: Date;
     updatedAt: Date;
@@ -54,6 +57,16 @@ const CertificateSchema = new Schema<ICertificate>(
             type: String,
             required: [true, 'Verification hash is required'],
             trim: true,
+        },
+        emailSentAt: {
+            type: Date,
+        },
+        emailStatus: {
+            type: String,
+            enum: ['sent', 'failed', 'pending'],
+        },
+        emailError: {
+            type: String,
         },
         issuedAt: {
             type: Date,

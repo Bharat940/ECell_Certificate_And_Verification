@@ -3,12 +3,14 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { ArrowLeft, Calendar, User, FileText, Trash2, Upload, FileDown, Search } from 'lucide-react';
+import { ArrowLeft, Calendar, User, FileText, Trash2, Upload, Download, Search, Mail, Settings } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { CertificateTable } from '@/components/CertificateTable';
 import { ImportCertificatesModal } from '@/components/ImportCertificatesModal';
 import { ConfirmDialog } from '@/components/ConfirmDialog';
 import { CertificateFormModal } from '@/components/CertificateFormModal';
+import { EmailTemplateModal } from '@/components/EmailTemplateModal';
+import { SendEmailModal } from '@/components/SendEmailModal';
 import { formatDateRange } from '@/lib/dateUtils';
 
 interface PageProps {
@@ -33,6 +35,9 @@ interface Certificate {
     certificateUrl: string;
     issuedAt: string;
     verificationUrl: string;
+    emailStatus?: 'sent' | 'failed' | 'pending' | null;
+    emailSentAt?: string | null;
+    emailError?: string | null;
 }
 
 export default function EventCertificatesPage({ params }: PageProps) {
@@ -67,6 +72,11 @@ export default function EventCertificatesPage({ params }: PageProps) {
         verificationUrl: string;
     } | null>(null);
     const [selectedFormEventId, setSelectedFormEventId] = useState('');
+
+    // Email Modal State
+    const [showEmailTemplate, setShowEmailTemplate] = useState(false);
+    const [showSendEmail, setShowSendEmail] = useState(false);
+    const [emailTargets, setEmailTargets] = useState<Certificate[]>([]);
 
     const filteredCertificates = certificates.filter(cert =>
         cert.participantName.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -398,6 +408,18 @@ export default function EventCertificatesPage({ params }: PageProps) {
         }
     };
 
+    const handleIndividualEmail = (cert: Certificate) => {
+        setEmailTargets([cert]);
+        setShowSendEmail(true);
+    };
+
+    const handleBulkEmail = () => {
+        if (selectedCertificates.size === 0) return;
+        const targets = certificates.filter(c => selectedCertificates.has(c.id));
+        setEmailTargets(targets);
+        setShowSendEmail(true);
+    };
+
     return (
         <div className="min-h-screen bg-slate-950 relative overflow-hidden">
             {/* Background */}
@@ -503,43 +525,65 @@ export default function EventCertificatesPage({ params }: PageProps) {
                                             />
                                         </div>
 
-                                        <div className="flex flex-wrap items-center gap-2 justify-end w-full lg:w-auto">
+                                        <div className="flex flex-wrap items-center gap-2 justify-end w-full lg:w-auto mt-4 lg:mt-0">
                                             <button
                                                 type="button"
                                                 onClick={() => setShowImportModal(true)}
-                                                className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-700 hover:to-blue-700 text-white rounded-lg transition-colors text-sm cursor-pointer"
+                                                className="flex items-center gap-1.5 sm:gap-2 px-3 py-2 bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-700 hover:to-blue-700 text-white rounded-lg transition-colors text-sm cursor-pointer"
+                                                title="Import"
                                             >
                                                 <Upload className="w-4 h-4" />
-                                                Import
+                                                <span className="hidden sm:inline">Import</span>
+                                            </button>
+                                            <button
+                                                type="button"
+                                                onClick={() => setShowEmailTemplate(true)}
+                                                className="flex items-center gap-1.5 sm:gap-2 px-3 py-2 bg-slate-700/50 hover:bg-slate-700 text-white rounded-lg transition-colors text-sm cursor-pointer"
+                                                title="Configure Email Template"
+                                            >
+                                                <Settings className="w-4 h-4" />
+                                                <span className="hidden sm:inline">Template</span>
+                                            </button>
+                                            <button
+                                                type="button"
+                                                disabled={selectedCertificates.size === 0}
+                                                onClick={handleBulkEmail}
+                                                className="flex items-center gap-1.5 sm:gap-2 px-3 py-2 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white rounded-lg transition-colors text-sm disabled:opacity-50 cursor-pointer"
+                                                title={`Send Emails (${selectedCertificates.size})`}
+                                            >
+                                                <Mail className="w-4 h-4" />
+                                                <span className="hidden sm:inline">Send</span>
+                                                <span className="px-1.5 py-0.5 bg-white/20 rounded-md text-xs">{selectedCertificates.size}</span>
                                             </button>
                                             <button
                                                 type="button"
                                                 disabled={certificates.length === 0 || isExporting}
                                                 onClick={() => handleExportSelected('csv')}
-                                                className="flex items-center gap-2 px-3 py-2 bg-slate-700/50 hover:bg-slate-700 text-white rounded-lg transition-colors text-sm disabled:opacity-50 cursor-pointer"
+                                                className="flex items-center gap-1.5 sm:gap-2 px-3 py-2 bg-slate-700/50 hover:bg-slate-700 text-white rounded-lg transition-colors text-sm disabled:opacity-50 cursor-pointer"
                                                 title="Export all as CSV"
                                             >
-                                                <FileDown className="w-4 h-4" />
-                                                Export All CSV
+                                                <Download className="w-4 h-4" />
+                                                <span className="text-[10px] sm:text-sm font-bold sm:font-normal uppercase tracking-wider sm:tracking-normal">CSV</span>
                                             </button>
                                             <button
                                                 type="button"
                                                 disabled={certificates.length === 0 || isExporting}
                                                 onClick={() => handleExportSelected('xlsx')}
-                                                className="flex items-center gap-2 px-3 py-2 bg-slate-700/50 hover:bg-slate-700 text-white rounded-lg transition-colors text-sm disabled:opacity-50 cursor-pointer"
+                                                className="flex items-center gap-1.5 sm:gap-2 px-3 py-2 bg-slate-700/50 hover:bg-slate-700 text-white rounded-lg transition-colors text-sm disabled:opacity-50 cursor-pointer"
                                                 title="Export all as XLSX"
                                             >
-                                                <FileDown className="w-4 h-4" />
-                                                Export All XLSX
+                                                <Download className="w-4 h-4" />
+                                                <span className="text-[10px] sm:text-sm font-bold sm:font-normal uppercase tracking-wider sm:tracking-normal">XLSX</span>
                                             </button>
                                             <button
                                                 type="button"
                                                 onClick={() => setShowDeleteAllConfirm(true)}
                                                 disabled={filteredCertificates.length === 0}
-                                                className="flex items-center gap-2 px-4 py-2 bg-red-700/50 hover:bg-red-700 text-white rounded-lg transition-colors text-sm disabled:opacity-50 cursor-pointer"
+                                                className="flex items-center gap-1.5 sm:gap-2 px-3 py-2 bg-red-700/50 hover:bg-red-700 text-white rounded-lg transition-colors text-sm disabled:opacity-50 cursor-pointer"
+                                                title={`Delete All (${filteredCertificates.length})`}
                                             >
                                                 <Trash2 className="w-4 h-4" />
-                                                Delete All ({filteredCertificates.length})
+                                                <span className="hidden sm:inline">Delete All</span>
                                             </button>
                                         </div>
                                     </div>
@@ -553,6 +597,7 @@ export default function EventCertificatesPage({ params }: PageProps) {
                                     onDelete={(id) => setDeleteConfirmId(id)}
                                     onBulkDelete={() => setShowBulkDeleteConfirm(true)}
                                     onExportSelected={handleExportSelected}
+                                    onSendEmail={handleIndividualEmail}
                                     isLoading={isExporting}
                                 />
                             </div>
@@ -647,6 +692,27 @@ Type "DELETE ALL" to confirm:`}
                 }}
                 generatedCert={generatedCert}
                 onCopyToClipboard={copyToClipboard}
+            />
+
+            {/* Email Modals */}
+            <EmailTemplateModal
+                isOpen={showEmailTemplate}
+                onClose={() => setShowEmailTemplate(false)}
+                eventId={eventId}
+            />
+
+            <SendEmailModal
+                isOpen={showSendEmail}
+                onClose={() => {
+                    setShowSendEmail(false);
+                    setEmailTargets([]);
+                }}
+                eventId={eventId}
+                certificates={emailTargets}
+                onSuccess={() => {
+                    fetchCertificates(eventId);
+                    setSelectedCertificates(new Set()); // Clear selection after sending
+                }}
             />
         </div>
     );

@@ -14,6 +14,10 @@ A professional certificate management platform for E-Cell RGPV, featuring automa
   - Import certificates from Excel/CSV
   - Export data to CSV/XLSX
 - **Safe Batch Processing:** Optimized for Vercel (client-side batching)
+- **Automated Email System:**
+  - Gmail SMTP Integration
+  - Dynamic Custom Email Templates per Event
+  - Live Bulk Dispatching with Delivery Tracking
 - Real-time certificate preview and download
 - Copy verification URLs and certificate numbers
 
@@ -81,6 +85,11 @@ NODE_ENV=development
 CLOUDINARY_CLOUD_NAME=<your-cloud-name>
 CLOUDINARY_API_KEY=<your-api-key>
 CLOUDINARY_API_SECRET=<your-api-secret>
+
+# Gmail SMTP Configuration (for sending certificates)
+GMAIL_USER=youraddress@gmail.com
+GMAIL_APP_PASSWORD=your-16-char-app-password
+GMAIL_FROM_NAME="E-Cell RGPV"
 ```
 
 **Generate secure keys:**
@@ -319,6 +328,8 @@ Compatible with:
 - `POST /api/admin/certificates/bulk-delete` - Bulk delete certificates
 - `POST /api/admin/certificates/import` - Parse Excel/CSV file
 - `POST /api/admin/certificates/export` - Export certificate data
+- `GET/PUT /api/admin/events/[eventId]/email-template` - Manage email templates
+- `POST /api/admin/emails/send` - Send batch emails
 
 ### Public Routes
 
