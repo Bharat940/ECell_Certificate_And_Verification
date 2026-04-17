@@ -39,4 +39,9 @@ export const TEMPLATE_OPTIONS: TemplateOption[] = [
         label: 'Groomings',
         description: 'Exclusive certificate for department groomings',
     },
+    {
+        value: 'certificate-startup-unfiltered.html',
+        label: 'Startup Unfiltered',
+        description: 'Template for Startup Unfiltered event',
+    },
 ];

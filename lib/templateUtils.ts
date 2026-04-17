@@ -48,6 +48,12 @@ export const AVAILABLE_TEMPLATES: Template[] = [
         description: 'Exclusive template for department groomings',
         color: '#99761b',
     },
+    {
+        name: 'Startup Unfiltered',
+        filename: 'certificate-startup-unfiltered.html',
+        description: 'Template for Startup Unfiltered event',
+        color: '#1e3a8a',
+    },
 ];
 
 /**
