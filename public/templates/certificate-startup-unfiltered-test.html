@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Startup Unfiltered Certificate</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Montserrat:ital,wght@0,100..900;1,100..900&family=Playfair+Display:ital,wght@0,400..900;1,400..900&family=Old+Standard+TT:ital,wght@0,400;0,700;1,400&display=swap"
+        rel="stylesheet">
+
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        @page {
+            size: A4 landscape;
+            margin: 0;
+        }
+
+        body {
+            width: 1123px;
+            height: 794px;
+            position: relative;
+            background-image: url('http://localhost:3000/assets/startup_unfiltered_certificate.png');
+            background-size: contain;
+            background-position: center;
+            background-repeat: no-repeat;
+        }
+
+        .participant-name {
+            position: absolute;
+            top: 52%;
+            left: 0;
+            width: 100%;
+            text-align: center;
+            font-family: 'Old Standard TT', serif;
+            color: #99761b;
+            font-size: 45px;
+            font-weight: 700;
+            text-transform: capitalize;
+            transform: translateY(-45%);
+        }
+
+        .event-date {
+            position: absolute;
+            bottom: 190px;
+            left: 210px;
+            font-family: 'Montserrat', sans-serif;
+            color: #334155;
+            font-size: 18px;
+            font-weight: 600;
+        }
+
+        .qr-section {
+            position: absolute;
+            bottom: 120px;
+            right: 160px;
+            text-align: center;
+        }
+
+        .qr-code {
+            width: 100px;
+            height: 100px;
+            opacity: 0.8;
+        }
+
+        .cert-number {
+            font-size: 10px;
+            color: #64748b;
+            font-family: 'Montserrat', sans-serif;
+            margin-top: 5px;
+            letter-spacing: 1.5px;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="participant-name">{{participantName}}</div>
+
+    <div id="raw-date" style="display: none;">{{eventDate}}</div>
+    <div id="display-date" class="event-date"></div>
+
+    <div class="qr-section">
+        <img src="{{qrCodeDataUrl}}" alt="QR Code" class="qr-code">
+        <div class="cert-number">{{certificateNumber}}</div>
+    </div>
+
+    <script>
+        (function () {
+            const rawDate = document.getElementById('raw-date').innerText.trim();
+            const displayDate = document.getElementById('display-date');
+            if (rawDate && displayDate) {
+                const dateObj = new Date(rawDate.split('-')[0].trim());
+                if (!isNaN(dateObj.getTime())) {
+                    const day = String(dateObj.getDate()).padStart(2, '0');
+                    const month = String(dateObj.getMonth() + 1).padStart(2, '0');
+                    const year = dateObj.getFullYear();
+                    displayDate.innerText = `${day}/${month}/${year}`;
+                } else {
+                    displayDate.innerText = rawDate;
+                }
+            }
+        })();
+    </script>
+</body>
+
+</html>
