@@ -46,6 +46,12 @@ async function connectDB(): Promise<typeof mongoose> {
 
   try {
     cached.conn = await cached.promise;
+
+    // Register models to prevent MissingSchemaError in production
+    if (cached.conn) {
+      await import('@/models/Event');
+      await import('@/models/Certificate');
+    }
   } catch (e) {
     cached.promise = null;
     console.error('❌ MongoDB connection error:', e);
