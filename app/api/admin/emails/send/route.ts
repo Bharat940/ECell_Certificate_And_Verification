@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { requireAdmin } from '@/lib/auth';
 import connectDB from '@/lib/db';
 import Certificate from '@/models/Certificate';
+import Event from '@/models/Event'; // Required for model registration/population
 import { renderEmailTemplate, sendCertificateEmail, EmailVariables } from '@/lib/email';
 import { logger } from '@/lib/logger';
 
