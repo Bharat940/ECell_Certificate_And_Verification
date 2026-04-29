@@ -21,7 +21,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
         const { eventId } = await params;
         
         await connectDB();
-        const event = await Event.findById(eventId).select('emailTemplate');
+        const event = await Event.findById(eventId).select('emailTemplate title startDate organizer');
         
         if (!event) {
             return NextResponse.json({ error: 'Event not found' }, { status: 404 });
@@ -30,6 +30,11 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
         return NextResponse.json({
             success: true,
             emailTemplate: event.emailTemplate || null,
+            event: {
+                title: event.title,
+                startDate: event.startDate,
+                organizer: event.organizer
+            }
         });
     } catch (error: any) {
         logger.apiError('GET', '/api/admin/events/[eventId]/email-template', error);

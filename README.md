@@ -18,6 +18,7 @@ A professional certificate management platform for E-Cell RGPV, featuring automa
   - Gmail SMTP Integration
   - Dynamic Custom Email Templates per Event
   - Live Bulk Dispatching with Delivery Tracking
+  - Preview navigation for multiple recipients in the admin panel
 - Real-time certificate preview and download
 - Copy verification URLs and certificate numbers
 
@@ -91,6 +92,17 @@ GMAIL_USER=youraddress@gmail.com
 GMAIL_APP_PASSWORD=your-16-char-app-password
 GMAIL_FROM_NAME="E-Cell RGPV"
 ```
+
+### 3. Production Checklist (Critical)
+
+Before deploying to production, ensure these steps are completed for the email system:
+
+1. **Gmail App Password**: You **must** generate a 16-character App Password from your Google Account settings (Security > App Passwords). Standard passwords will not work.
+2. **2-Factor Authentication**: Ensure 2FA is enabled on your Gmail account.
+3. **Environment Variables**: Add `GMAIL_USER`, `GMAIL_APP_PASSWORD`, and `NEXT_PUBLIC_APP_URL` to your production hosting (e.g., Vercel).
+4. **App URL**: `NEXT_PUBLIC_APP_URL` must match your live domain (e.g., `https://your-site.vercel.app`) for verification links to work.
+
+### 4. Start Development Server and Generate Keys
 
 **Generate secure keys:**
 ```bash

@@ -44,4 +44,9 @@ export const TEMPLATE_OPTIONS: TemplateOption[] = [
         label: 'Startup Unfiltered',
         description: 'Template for Startup Unfiltered event',
     },
+    {
+        value: 'certificate-startup-unfiltered-ep2.html',
+        label: 'Startup Unfiltered Ep 2',
+        description: 'Template for Startup Unfiltered Episode 2',
+    },
 ];

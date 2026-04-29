@@ -54,6 +54,12 @@ export const AVAILABLE_TEMPLATES: Template[] = [
         description: 'Template for Startup Unfiltered event',
         color: '#1e3a8a',
     },
+    {
+        name: 'Startup Unfiltered Ep 2',
+        filename: 'certificate-startup-unfiltered-ep2.html',
+        description: 'Template for Startup Unfiltered Episode 2',
+        color: '#1e3a8a',
+    },
 ];
 
 /**

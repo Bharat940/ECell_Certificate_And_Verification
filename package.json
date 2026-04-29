@@ -14,9 +14,9 @@
     "@yudiel/react-qr-scanner": "^2.5.1",
     "cloudinary": "^2.9.0",
     "jsonwebtoken": "^9.0.3",
-    "lucide-react": "^0.563.0",
+    "lucide-react": "^1.11.0",
     "mongoose": "^9.1.5",
-    "next": "^16.2.3",
+    "next": "^16.2.4",
     "nodemailer": "^8.0.5",
     "puppeteer-core": "^24.36.1",
     "qrcode": "^1.5.4",
@@ -36,5 +36,8 @@
     "eslint-config-next": "^0.2.4",
     "tailwindcss": "^4",
     "typescript": "^5"
+  },
+  "overrides": {
+    "postcss": "^8.5.12"
   }
 }

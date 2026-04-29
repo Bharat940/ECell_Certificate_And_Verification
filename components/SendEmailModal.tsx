@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { X, Mail, AlertTriangle, CheckCircle, AlertCircle } from 'lucide-react';
+import { X, Mail, AlertTriangle, CheckCircle, AlertCircle, ChevronLeft, ChevronRight } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 interface CertificateData {
@@ -30,6 +30,8 @@ export function SendEmailModal({ isOpen, onClose, eventId, certificates, onSucce
     const [previewHtml, setPreviewHtml] = useState<string>('');
     const [previewSubject, setPreviewSubject] = useState<string>('');
     
+    const [currentPreviewIndex, setCurrentPreviewIndex] = useState(0);
+    
     // Batch processing state
     const [isSending, setIsSending] = useState(false);
     const [progress, setProgress] = useState(0);
@@ -48,6 +50,13 @@ export function SendEmailModal({ isOpen, onClose, eventId, certificates, onSucce
         }
     }, [isOpen, eventId, certificates]);
 
+    // Update preview whenever the template or the selected index changes
+    useEffect(() => {
+        if (template && certificates.length > 0) {
+            generatePreview(template.subject, template.body, null, currentPreviewIndex);
+        }
+    }, [currentPreviewIndex, template, certificates]);
+
     const resetState = () => {
         setIsLoading(true);
         setTemplateError(null);
@@ -58,6 +67,7 @@ export function SendEmailModal({ isOpen, onClose, eventId, certificates, onSucce
         setProgress(0);
         setSendStats(null);
         setConfirmResend(false);
+        setCurrentPreviewIndex(0);
     };
 
     const checkTemplateAndPreparePreview = async () => {
@@ -70,7 +80,7 @@ export function SendEmailModal({ isOpen, onClose, eventId, certificates, onSucce
 
             if (res.ok && data.success && data.emailTemplate?.subject && data.emailTemplate?.body) {
                 setTemplate(data.emailTemplate);
-                generatePreview(data.emailTemplate.subject, data.emailTemplate.body);
+                // The useEffect above will trigger the first preview generation
             } else {
                 setTemplateError("No email template is configured for this event. Please configure one before sending.");
             }
@@ -81,21 +91,21 @@ export function SendEmailModal({ isOpen, onClose, eventId, certificates, onSucce
         }
     };
 
-    const generatePreview = (subjectTemplate: string, bodyTemplate: string) => {
+    const generatePreview = (subjectTemplate: string, bodyTemplate: string, eventDetails?: any, index = 0) => {
         if (certificates.length === 0) return;
         
-        // Use the first certificate as sample for preview
-        const sample = certificates[0];
+        // Use the selected index as sample for preview
+        const sample = certificates[index] || certificates[0];
         
         const variables = {
             participantName: sample.participantName,
-            eventName: 'Event Name', // Since we don't have event details here, use generic
-            eventDate: 'Event Date',
+            eventName: eventDetails?.title || 'Event Name',
+            eventDate: eventDetails?.startDate ? new Date(eventDetails.startDate).toLocaleDateString() : 'Event Date',
             certificateNumber: sample.certificateNumber,
             verificationLink: sample.verificationUrl,
             certificateLink: sample.certificateUrl,
             issueDate: new Date(sample.issuedAt).toLocaleDateString(),
-            organizer: 'Organizer',
+            organizer: eventDetails?.organizer || 'Organizer',
         };
 
         let pBody = bodyTemplate;
@@ -107,12 +117,8 @@ export function SendEmailModal({ isOpen, onClose, eventId, certificates, onSucce
             pSubject = pSubject.replace(regex, value || '');
         }
 
+        setPreviewSubject(pSubject);
         setPreviewHtml(pBody);
-        // Replace event specific placeholders that couldn't be mapped accurately locally due to missing event context
-        setPreviewSubject(pSubject.replace(/{{eventName}}/g, '[Event Name]')); 
-        setPreviewHtml(prev => prev.replace(/{{eventName}}/g, '[Event Name]')
-                                   .replace(/{{organizer}}/g, '[Organizer]')
-                                   .replace(/{{eventDate}}/g, '[Event Date]'));
     };
 
     const handleSend = async () => {
@@ -160,6 +166,14 @@ export function SendEmailModal({ isOpen, onClose, eventId, certificates, onSucce
         setSendStats({ sent: totalSent, failed: totalFailed });
         setIsSending(false);
         onSuccess(); // Refresh table status
+    };
+
+    const handlePrevPreview = () => {
+        setCurrentPreviewIndex(prev => (prev > 0 ? prev - 1 : certificates.length - 1));
+    };
+
+    const handleNextPreview = () => {
+        setCurrentPreviewIndex(prev => (prev < certificates.length - 1 ? prev + 1 : 0));
     };
 
     if (!isOpen) return null;
@@ -289,9 +303,32 @@ export function SendEmailModal({ isOpen, onClose, eventId, certificates, onSucce
 
                             {/* Right Col: Live Preview */}
                             <div className="flex flex-col border border-slate-700 rounded-xl overflow-hidden bg-slate-50">
-                                <div className="bg-slate-200 border-b border-slate-300 p-3 shadow-sm">
-                                    <span className="text-xs font-bold text-slate-500 uppercase tracking-wider block mb-1">Previewing exact email for:</span>
-                                    <span className="text-sm text-slate-800 font-medium">{certificates[0]?.participantName || 'Sample User'}</span>
+                                <div className="bg-slate-200 border-b border-slate-300 p-3 shadow-sm flex items-center justify-between">
+                                    <div>
+                                        <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block mb-0.5">Previewing email for:</span>
+                                        <span className="text-sm text-slate-800 font-medium">{certificates[currentPreviewIndex]?.participantName || 'Sample User'}</span>
+                                    </div>
+                                    {certificates.length > 1 && (
+                                        <div className="flex items-center gap-2">
+                                            <button 
+                                                onClick={handlePrevPreview}
+                                                className="p-1 hover:bg-slate-300 rounded transition-colors text-slate-600 cursor-pointer"
+                                                title="Previous Recipient"
+                                            >
+                                                <ChevronLeft className="w-4 h-4" />
+                                            </button>
+                                            <span className="text-[10px] font-bold text-slate-500 bg-slate-300/50 px-1.5 py-0.5 rounded">
+                                                {currentPreviewIndex + 1} / {certificates.length}
+                                            </span>
+                                            <button 
+                                                onClick={handleNextPreview}
+                                                className="p-1 hover:bg-slate-300 rounded transition-colors text-slate-600 cursor-pointer"
+                                                title="Next Recipient"
+                                            >
+                                                <ChevronRight className="w-4 h-4" />
+                                            </button>
+                                        </div>
+                                    )}
                                 </div>
                                 <div className="bg-white border-b border-slate-200 p-3">
                                     <span className="text-xs text-slate-500 mr-2">Subject:</span>
@@ -306,30 +343,33 @@ export function SendEmailModal({ isOpen, onClose, eventId, certificates, onSucce
                             </div>
 
                         </div>
-                    )}
+                    )
+}
                 </div>
 
                 {/* Footer */}
-                <div className="p-4 border-t border-slate-800 bg-slate-900/80 flex justify-end gap-3">
-                    <button
-                        onClick={onClose}
-                        disabled={isSending}
-                        className="px-5 py-2 text-slate-300 hover:text-white hover:bg-slate-800 rounded-lg transition-colors cursor-pointer"
-                    >
-                        {sendStats ? 'Close' : 'Cancel'}
-                    </button>
-                    
-                    {!templateError && !sendStats && (
+                {!sendStats && (
+                    <div className="p-4 border-t border-slate-800 bg-slate-900/80 flex justify-end gap-3">
                         <button
-                            onClick={handleSend}
-                            disabled={isSending || validCerts.length === 0 || (previouslySentCount > 0 && !confirmResend)}
-                            className="flex items-center gap-2 px-6 py-2 bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700 text-white rounded-lg transition-all disabled:opacity-50 cursor-pointer font-medium shadow-lg"
+                            onClick={onClose}
+                            disabled={isSending}
+                            className="px-5 py-2 text-slate-300 hover:text-white hover:bg-slate-800 rounded-lg transition-colors cursor-pointer"
                         >
-                            <Mail className="w-4 h-4" />
-                            {isSending ? 'Sending...' : `Send ${validCerts.length} Email(s)`}
+                            Cancel
                         </button>
-                    )}
-                </div>
+                        
+                        {!templateError && (
+                            <button
+                                onClick={handleSend}
+                                disabled={isSending || validCerts.length === 0 || (previouslySentCount > 0 && !confirmResend)}
+                                className="flex items-center gap-2 px-6 py-2 bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700 text-white rounded-lg transition-all disabled:opacity-50 cursor-pointer font-medium shadow-lg"
+                            >
+                                <Mail className="w-4 h-4" />
+                                {isSending ? 'Sending...' : `Send ${validCerts.length} Email(s)`}
+                            </button>
+                        )}
+                    </div>
+                )}
 
             </div>
         </div>

@@ -112,15 +112,7 @@ export function CertificateTable({
                 <table className="w-full text-sm">
                     <thead>
                         <tr className="bg-slate-800/80 text-slate-300 text-left">
-                            <th className="p-3 w-10">
-                                <input
-                                    type="checkbox"
-                                    checked={allSelected}
-                                    onChange={onSelectAll}
-                                    className="w-4 h-4 rounded border-slate-600 text-blue-600 focus:ring-blue-500 cursor-pointer"
-                                    aria-label="Select all"
-                                />
-                            </th>
+                            <th className="p-3 w-10"></th>
                             <th className="p-3">Participant</th>
                             <th className="p-3">Certificate #</th>
                             <th className="p-3">Email Status</th>
@@ -132,12 +124,9 @@ export function CertificateTable({
                         {certificates.map((cert) => (
                             <tr
                                 key={cert.id}
-                                className={`border-t border-slate-700/50 transition-colors ${selectedIds.has(cert.id)
-                                        ? 'bg-blue-950/20 border-l-2 border-l-blue-500'
-                                        : 'hover:bg-slate-800/30'
-                                    }`}
+                                className={`border-t border-slate-700/50 transition-colors ${selectedIds.has(cert.id) ? 'bg-blue-950/20' : 'hover:bg-slate-800/30'}`}
                             >
-                                <td className="p-3">
+                                <td className={`p-3 ${selectedIds.has(cert.id) ? 'shadow-[inset_3px_0_0_0_#3b82f6]' : ''}`}>
                                     <input
                                         type="checkbox"
                                         checked={selectedIds.has(cert.id)}

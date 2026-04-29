@@ -24,3 +24,37 @@ body {
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
 }
+
+/* Global Scrollbar Customization */
+@layer base {
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: #334155 transparent;
+  }
+
+  /* Webkit browsers (Chrome, Safari, Edge) */
+  ::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+  }
+
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    background-color: #334155; /* slate-700 */
+    border-radius: 10px;
+    border: 3px solid transparent; /* This creates a padding effect */
+    background-clip: content-box;
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    background-color: #475569; /* slate-600 */
+  }
+
+  /* Ensure the background doesn't interfere with the dark mode immersion */
+  html, body {
+    scrollbar-gutter: stable;
+  }
+}

@@ -144,8 +144,6 @@ export async function POST(request: NextRequest) {
                 errors.push(`Row "${participantName}": ${msg}`);
                 failed++;
                 logger.error('CERT', '[BATCH_IMPORT] Row failed', { participantName, error: msg });
-                errors.push(`Row "${participantName}": ${msg}`);
-                failed++;
             }
         }
 
