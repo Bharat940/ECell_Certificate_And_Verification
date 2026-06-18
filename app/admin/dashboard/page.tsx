@@ -1,8 +1,8 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { LogOut, Calendar, FileText } from 'lucide-react';
+import { LogOut, Calendar, FileText, Layout } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { EventCard } from '@/components/EventCard';
 import { ConfirmDialog } from '@/components/ConfirmDialog';
@@ -17,6 +17,7 @@ interface Event {
     endDate: string;
     organizer: string;
     template: string;
+    templateId?: string;
 }
 
 interface GeneratedCertificate {
@@ -41,6 +42,7 @@ export default function AdminDashboard() {
     const [isSingleDay, setIsSingleDay] = useState(true);
     const [eventOrganizer, setEventOrganizer] = useState('E-Cell');
     const [eventTemplate, setEventTemplate] = useState('certificate-default.html');
+    const [eventTemplateId, setEventTemplateId] = useState('');
     const [isCreatingEvent, setIsCreatingEvent] = useState(false);
     const [eventError, setEventError] = useState('');
 
@@ -98,7 +100,7 @@ export default function AdminDashboard() {
         }
     };
 
-    const handleCreateEvent = async (e: React.FormEvent<HTMLFormElement>) => {
+    const handleCreateEvent = async (e: React.SubmitEvent<HTMLFormElement>) => {
         e.preventDefault();
         setEventError('');
         setIsCreatingEvent(true);
@@ -114,6 +116,7 @@ export default function AdminDashboard() {
                     endDate: isSingleDay ? eventStartDate : eventEndDate,
                     organizer: eventOrganizer,
                     template: eventTemplate,
+                    templateId: eventTemplateId || undefined,
                 }),
             });
 
@@ -127,6 +130,7 @@ export default function AdminDashboard() {
                 setIsSingleDay(true);
                 setEventOrganizer('E-Cell');
                 setEventTemplate('certificate-default.html');
+                setEventTemplateId('');
                 setShowEventForm(false);
                 // Refresh events list
                 await fetchEvents();
@@ -143,8 +147,11 @@ export default function AdminDashboard() {
         }
     };
 
-    const handleGenerateCertificate = async (e: React.FormEvent<HTMLFormElement>) => {
-        e.preventDefault();
+    const handleGenerateCertificate = async (data: {
+        eventId: string;
+        participantName: string;
+        participantEmail?: string;
+    }) => {
         setCertError('');
         setIsGenerating(true);
 
@@ -153,17 +160,13 @@ export default function AdminDashboard() {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 credentials: 'include',
-                body: JSON.stringify({
-                    eventId: selectedEventId,
-                    participantName: participantName,
-                    participantEmail: participantEmail || undefined,
-                }),
+                body: JSON.stringify(data),
             });
 
-            const data = await response.json();
+            const responseData = await response.json();
 
-            if (response.ok && data.success) {
-                const cert = data.certificate;
+            if (response.ok && responseData.success) {
+                const cert = responseData.certificate;
                 setGeneratedCert({
                     certificateNumber: cert.certificateNumber,
                     participantName: cert.participantName,
@@ -176,8 +179,8 @@ export default function AdminDashboard() {
                 setSelectedEventId('');
                 toast.success('Certificate generated successfully!');
             } else {
-                setCertError(data.error || 'Failed to generate certificate');
-                toast.error(data.error || 'Failed to generate certificate');
+                setCertError(responseData.error || 'Failed to generate certificate');
+                toast.error(responseData.error || 'Failed to generate certificate');
             }
         } catch (error) {
             setCertError('Network error. Please try again.');
@@ -185,6 +188,21 @@ export default function AdminDashboard() {
         } finally {
             setIsGenerating(false);
         }
+    };
+
+    const handleUploadedCertificate = (cert: {
+        certificateNumber: string;
+        participantName: string;
+        certificateUrl: string;
+    }) => {
+        setGeneratedCert({
+            ...cert,
+            verificationUrl: `${window.location.origin.replace(/\/+$/, '')}/verify/${cert.certificateNumber}`,
+        });
+        setParticipantName('');
+        setParticipantEmail('');
+        setSelectedEventId('');
+        toast.success('Certificate registered successfully!');
     };
 
     const copyToClipboard = (text: string) => {
@@ -207,11 +225,12 @@ export default function AdminDashboard() {
             setIsSingleDay(event.startDate === event.endDate);
             setEventOrganizer(event.organizer || 'E-Cell');
             setEventTemplate(event.template || 'certificate-default.html');
+            setEventTemplateId(event.templateId || '');
             setShowEventForm(true);
         }
     };
 
-    const handleUpdateEvent = async (e: React.FormEvent<HTMLFormElement>) => {
+    const handleUpdateEvent = async (e: React.SubmitEvent<HTMLFormElement>) => {
         e.preventDefault();
         if (!editingEventId) return;
 
@@ -229,6 +248,7 @@ export default function AdminDashboard() {
                     endDate: isSingleDay ? eventStartDate : eventEndDate,
                     organizer: eventOrganizer,
                     template: eventTemplate,
+                    templateId: eventTemplateId || undefined,
                 }),
             });
 
@@ -292,6 +312,7 @@ export default function AdminDashboard() {
         setIsSingleDay(true);
         setEventOrganizer('E-Cell');
         setEventTemplate('certificate-default.html');
+        setEventTemplateId('');
     };
 
     const closeCertForm = () => {
@@ -337,7 +358,22 @@ export default function AdminDashboard() {
                 {/* Main Content */}
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
                     {/* Action Cards */}
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6 mb-6 sm:mb-8">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 mb-6 sm:mb-8">
+                        <button
+                            onClick={() => router.push('/admin/templates')}
+                            className="bg-slate-900/50 backdrop-blur-xl rounded-xl sm:rounded-2xl p-4 sm:p-6 border border-slate-800/50 hover:border-blue-500/50 transition-all text-left group cursor-pointer"
+                        >
+                            <div className="flex items-center gap-3 sm:gap-4">
+                                <div className="w-10 h-10 sm:w-12 sm:h-12 bg-gradient-to-br from-indigo-600 to-blue-600 rounded-full flex items-center justify-center shrink-0 group-hover:scale-110 transition-transform shadow-lg shadow-indigo-900/20">
+                                    <Layout className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
+                                </div>
+                                <div>
+                                    <h3 className="text-base sm:text-lg font-semibold text-white">Templates</h3>
+                                    <p className="text-slate-400 text-xs sm:text-sm">Manage certificate blueprints</p>
+                                </div>
+                            </div>
+                        </button>
+
                         <button
                             onClick={() => setShowEventForm(true)}
                             className="bg-slate-900/50 backdrop-blur-xl rounded-xl sm:rounded-2xl p-4 sm:p-6 border border-slate-800/50 hover:border-blue-900/50 transition-all text-left group cursor-pointer"
@@ -411,6 +447,7 @@ export default function AdminDashboard() {
                     isSingleDay: isSingleDay,
                     organizer: eventOrganizer,
                     template: eventTemplate,
+                    templateId: eventTemplateId,
                 }}
                 onFormChange={{
                     setTitle: setEventTitle,
@@ -419,6 +456,7 @@ export default function AdminDashboard() {
                     setIsSingleDay: setIsSingleDay,
                     setOrganizer: setEventOrganizer,
                     setTemplate: setEventTemplate,
+                    setTemplateId: setEventTemplateId,
                 }}
             />
 
@@ -427,6 +465,7 @@ export default function AdminDashboard() {
                 isOpen={showCertForm}
                 onClose={closeCertForm}
                 onSubmit={handleGenerateCertificate}
+                onUploadSuccess={handleUploadedCertificate}
                 isLoading={isGenerating}
                 error={certError}
                 events={events}
