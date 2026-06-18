@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { ArrowLeft, Calendar, User, FileText, Trash2, Upload, Download, Search, Mail, Settings } from 'lucide-react';
@@ -150,8 +150,11 @@ export default function EventCertificatesPage({ params }: PageProps) {
         }
     };
 
-    const handleGenerateCertificate = async (e: React.FormEvent<HTMLFormElement>) => {
-        e.preventDefault();
+    const handleGenerateCertificate = async (data: {
+        eventId: string;
+        participantName: string;
+        participantEmail?: string;
+    }) => {
         setCertError('');
         setIsGenerating(true);
 
@@ -160,17 +163,13 @@ export default function EventCertificatesPage({ params }: PageProps) {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 credentials: 'include',
-                body: JSON.stringify({
-                    eventId: selectedFormEventId || eventId,
-                    participantName: participantName,
-                    participantEmail: participantEmail || undefined,
-                }),
+                body: JSON.stringify(data),
             });
 
-            const data = await response.json();
+            const responseData = await response.json();
 
-            if (response.ok && data.success) {
-                const cert = data.certificate;
+            if (response.ok && responseData.success) {
+                const cert = responseData.certificate;
                 setGeneratedCert({
                     certificateNumber: cert.certificateNumber,
                     participantName: cert.participantName,
@@ -183,8 +182,8 @@ export default function EventCertificatesPage({ params }: PageProps) {
                 toast.success('Certificate generated successfully!');
                 await fetchCertificates(eventId); // refresh list
             } else {
-                setCertError(data.error || 'Failed to generate certificate');
-                toast.error(data.error || 'Failed to generate certificate');
+                setCertError(responseData.error || 'Failed to generate certificate');
+                toast.error(responseData.error || 'Failed to generate certificate');
             }
         } catch (error) {
             setCertError('Network error. Please try again.');
@@ -192,6 +191,21 @@ export default function EventCertificatesPage({ params }: PageProps) {
         } finally {
             setIsGenerating(false);
         }
+    };
+
+    const handleUploadedCertificate = (cert: {
+        certificateNumber: string;
+        participantName: string;
+        certificateUrl: string;
+    }) => {
+        setGeneratedCert({
+            ...cert,
+            verificationUrl: `${window.location.origin.replace(/\/+$/, '')}/verify/${cert.certificateNumber}`,
+        });
+        setParticipantName('');
+        setParticipantEmail('');
+        toast.success('Certificate registered successfully!');
+        void fetchCertificates(eventId);
     };
 
     const copyToClipboard = (text: string) => {
@@ -263,7 +277,7 @@ export default function EventCertificatesPage({ params }: PageProps) {
                         deletedCount += data.deleted || 0;
                         failedCount += data.failed || 0;
                         if (data.errors) {
-                            errors.push(...data.errors.map((e: any) => e.error));
+                            errors.push(...data.errors.map((entry: { error: string }) => entry.error));
                         }
                     } else {
                         const data = await response.json();
@@ -328,7 +342,7 @@ export default function EventCertificatesPage({ params }: PageProps) {
                         deletedCount += data.deleted || 0;
                         failedCount += data.failed || 0;
                         if (data.errors) {
-                            errors.push(...data.errors.map((e: any) => e.error));
+                            errors.push(...data.errors.map((entry: { error: string }) => entry.error));
                         }
                     } else {
                         const data = await response.json();
@@ -677,6 +691,7 @@ Type "DELETE ALL" to confirm:`}
                 isOpen={showCertForm}
                 onClose={closeCertForm}
                 onSubmit={handleGenerateCertificate}
+                onUploadSuccess={handleUploadedCertificate}
                 isLoading={isGenerating}
                 error={certError}
                 events={event ? [event] : []}

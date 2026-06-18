@@ -3,129 +3,136 @@
  * Provides structured logging with timestamps and log levels
  */
 
-type LogLevel = 'INFO' | 'WARN' | 'ERROR' | 'SUCCESS' | 'DEBUG';
+type LogLevel = "INFO" | "WARN" | "ERROR" | "SUCCESS" | "DEBUG";
 
 interface LogEntry {
-    timestamp: string;
-    level: LogLevel;
-    context: string;
-    message: string;
-    data?: any;
+  timestamp: string;
+  level: LogLevel;
+  context: string;
+  message: string;
+  data?: unknown;
 }
 
 class Logger {
-    private isDevelopment = process.env.NODE_ENV !== 'production';
+  private isDevelopment = process.env.NODE_ENV !== "production";
 
-    private formatTimestamp(): string {
-        return new Date().toISOString();
+  private formatTimestamp(): string {
+    return new Date().toISOString();
+  }
+
+  private formatMessage(entry: LogEntry): string {
+    const { timestamp, level, context, message, data } = entry;
+    const dataStr = data ? ` | Data: ${JSON.stringify(data)}` : "";
+    return `[${timestamp}] [${level}] [${context}] ${message}${dataStr}`;
+  }
+
+  private log(
+    level: LogLevel,
+    context: string,
+    message: string,
+    data?: unknown,
+  ) {
+    const entry: LogEntry = {
+      timestamp: this.formatTimestamp(),
+      level,
+      context,
+      message,
+      data,
+    };
+
+    const formattedMessage = this.formatMessage(entry);
+
+    // In production, you might want to send logs to a service like Sentry, LogRocket, etc.
+    if (this.isDevelopment) {
+      switch (level) {
+        case "ERROR":
+          console.error(formattedMessage);
+          break;
+        case "WARN":
+          console.warn(formattedMessage);
+          break;
+        case "SUCCESS":
+          console.log(`✅ ${formattedMessage}`);
+          break;
+        case "DEBUG":
+          console.debug(formattedMessage);
+          break;
+        default:
+          console.log(formattedMessage);
+      }
+    } else {
+      // In production, log everything as JSON for easier parsing
+      console.log(JSON.stringify(entry));
     }
+  }
 
-    private formatMessage(entry: LogEntry): string {
-        const { timestamp, level, context, message, data } = entry;
-        const dataStr = data ? ` | Data: ${JSON.stringify(data)}` : '';
-        return `[${timestamp}] [${level}] [${context}] ${message}${dataStr}`;
+  info(context: string, message: string, data?: unknown) {
+    this.log("INFO", context, message, data);
+  }
+
+  warn(context: string, message: string, data?: unknown) {
+    this.log("WARN", context, message, data);
+  }
+
+  error(context: string, message: string, data?: unknown) {
+    this.log("ERROR", context, message, data);
+  }
+
+  success(context: string, message: string, data?: unknown) {
+    this.log("SUCCESS", context, message, data);
+  }
+
+  debug(context: string, message: string, data?: unknown) {
+    if (this.isDevelopment) {
+      this.log("DEBUG", context, message, data);
     }
+  }
 
-    private log(level: LogLevel, context: string, message: string, data?: any) {
-        const entry: LogEntry = {
-            timestamp: this.formatTimestamp(),
-            level,
-            context,
-            message,
-            data,
-        };
+  // API-specific logging helpers
+  apiRequest(method: string, path: string, data?: unknown) {
+    this.info("API", `${method} ${path}`, data);
+  }
 
-        const formattedMessage = this.formatMessage(entry);
+  apiSuccess(method: string, path: string, data?: unknown) {
+    this.success("API", `${method} ${path} - Success`, data);
+  }
 
-        // In production, you might want to send logs to a service like Sentry, LogRocket, etc.
-        if (this.isDevelopment) {
-            switch (level) {
-                case 'ERROR':
-                    console.error(formattedMessage);
-                    break;
-                case 'WARN':
-                    console.warn(formattedMessage);
-                    break;
-                case 'SUCCESS':
-                    console.log(`✅ ${formattedMessage}`);
-                    break;
-                case 'DEBUG':
-                    console.debug(formattedMessage);
-                    break;
-                default:
-                    console.log(formattedMessage);
-            }
-        } else {
-            // In production, log everything as JSON for easier parsing
-            console.log(JSON.stringify(entry));
-        }
-    }
+  apiError(method: string, path: string, error: unknown) {
+    const err = error as Error;
+    this.error("API", `${method} ${path} - Failed`, {
+      error: err.message || String(error),
+      stack: err.stack,
+    });
+  }
 
-    info(context: string, message: string, data?: any) {
-        this.log('INFO', context, message, data);
-    }
+  // Auth-specific logging helpers
+  authAttempt(identifier: string) {
+    this.info("AUTH", `Login attempt`, { identifier });
+  }
 
-    warn(context: string, message: string, data?: any) {
-        this.log('WARN', context, message, data);
-    }
+  authSuccess(identifier: string) {
+    this.success("AUTH", `Login successful`, { identifier });
+  }
 
-    error(context: string, message: string, data?: any) {
-        this.log('ERROR', context, message, data);
-    }
+  authFailure(identifier: string, reason: string) {
+    this.warn("AUTH", `Login failed`, { identifier, reason });
+  }
 
-    success(context: string, message: string, data?: any) {
-        this.log('SUCCESS', context, message, data);
-    }
+  authLogout(identifier: string) {
+    this.info("AUTH", `Logout`, { identifier });
+  }
 
-    debug(context: string, message: string, data?: any) {
-        if (this.isDevelopment) {
-            this.log('DEBUG', context, message, data);
-        }
-    }
+  // Database-specific logging helpers
+  dbQuery(operation: string, collection: string, data?: unknown) {
+    this.debug("DB", `${operation} on ${collection}`, data);
+  }
 
-    // API-specific logging helpers
-    apiRequest(method: string, path: string, data?: any) {
-        this.info('API', `${method} ${path}`, data);
-    }
-
-    apiSuccess(method: string, path: string, data?: any) {
-        this.success('API', `${method} ${path} - Success`, data);
-    }
-
-    apiError(method: string, path: string, error: any) {
-        this.error('API', `${method} ${path} - Failed`, {
-            error: error.message || error,
-            stack: error.stack,
-        });
-    }
-
-    // Auth-specific logging helpers
-    authAttempt(identifier: string) {
-        this.info('AUTH', `Login attempt`, { identifier });
-    }
-
-    authSuccess(identifier: string) {
-        this.success('AUTH', `Login successful`, { identifier });
-    }
-
-    authFailure(identifier: string, reason: string) {
-        this.warn('AUTH', `Login failed`, { identifier, reason });
-    }
-
-    authLogout(identifier: string) {
-        this.info('AUTH', `Logout`, { identifier });
-    }
-
-    // Database-specific logging helpers
-    dbQuery(operation: string, collection: string, data?: any) {
-        this.debug('DB', `${operation} on ${collection}`, data);
-    }
-
-    dbError(operation: string, collection: string, error: any) {
-        this.error('DB', `${operation} on ${collection} failed`, {
-            error: error.message || error,
-        });
-    }
+  dbError(operation: string, collection: string, error: unknown) {
+    const err = error as Error;
+    this.error("DB", `${operation} on ${collection} failed`, {
+      error: err.message || String(error),
+    });
+  }
 }
 
 // Export singleton instance

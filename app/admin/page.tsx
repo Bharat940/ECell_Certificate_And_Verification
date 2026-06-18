@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Lock, LogIn, Eye, EyeOff } from 'lucide-react';
 import toast from 'react-hot-toast';
@@ -12,7 +12,7 @@ export default function AdminPage() {
     const [showPassword, setShowPassword] = useState(false);
     const router = useRouter();
 
-    const handleLogin = async (e: React.FormEvent<HTMLFormElement>) => {
+    const handleLogin = async (e: React.SubmitEvent<HTMLFormElement>) => {
         e.preventDefault();
         setError('');
         setIsLoading(true);

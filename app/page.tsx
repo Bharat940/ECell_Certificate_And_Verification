@@ -1,18 +1,18 @@
-'use client';
+"use client";
 
-import { useState } from 'react';
-import { useRouter } from 'next/navigation';
-import { Info, Shield, QrCode } from 'lucide-react';
+import React, { useState } from "react";
+import { useRouter } from "next/navigation";
+import { Info, Shield, QrCode } from "lucide-react";
 
-import Image from 'next/image';
-import { QRScannerModal } from '@/components/QRScannerModal';
+import Image from "next/image";
+import { QRScannerModal } from "@/components/QRScannerModal";
 
 export default function Home() {
-  const [certificateNumber, setCertificateNumber] = useState('');
+  const [certificateNumber, setCertificateNumber] = useState("");
   const [isScannerOpen, setIsScannerOpen] = useState(false);
   const router = useRouter();
 
-  const handleVerify = (e: React.FormEvent<HTMLFormElement>) => {
+  const handleVerify = (e: React.SubmitEvent<HTMLFormElement>) => {
     e.preventDefault();
 
     if (certificateNumber.trim()) {
@@ -25,7 +25,7 @@ export default function Home() {
     try {
       // If the QR code is a full verification URL, parse the pathname
       const url = new URL(result);
-      const urlParts = url.pathname.split('/');
+      const urlParts = url.pathname.split("/");
       const code = urlParts[urlParts.length - 1];
       if (code) {
         router.push(`/verify/${code.toUpperCase()}`);
@@ -41,15 +41,13 @@ export default function Home() {
   return (
     <main className="min-h-screen bg-slate-950 flex items-center justify-center p-4 relative overflow-hidden font-sans">
       {/* Subtle organic background pattern in dark mode */}
-      <div className="absolute inset-0 bg-[radial-gradient(#334155_1px,transparent_1px)] [background-size:16px_16px] opacity-20"></div>
+      <div className="absolute inset-0 bg-[radial-gradient(#334155_1px,transparent_1px)] bg-size-[16px_16px] opacity-20"></div>
 
       <div className="w-full max-w-xl relative z-10 mx-auto">
-
         {/* Verification Card - Clean, solid design but dark */}
         <div className="bg-slate-900/80 backdrop-blur-xl rounded-2xl sm:rounded-3xl p-6 sm:p-10 md:p-12 shadow-[0_8px_30px_rgb(0,0,0,0.5)] border border-slate-800 relative overflow-hidden">
-
           {/* Subtle top decoration bar */}
-          <div className="absolute top-0 left-0 w-full h-1.5 bg-gradient-to-r from-blue-600 via-cyan-500 to-blue-600"></div>
+          <div className="absolute top-0 left-0 w-full h-1.5 bg-linear-to-r from-blue-600 via-cyan-500 to-blue-600"></div>
 
           {/* Logo Section */}
           <div className="flex justify-center mb-6 sm:mb-10">
@@ -69,7 +67,8 @@ export default function Home() {
               Certificate Verification
             </h1>
             <p className="text-slate-400 text-sm sm:text-base mt-3">
-              Enter your unique certificate number below to securely verify its authenticity.
+              Enter your unique certificate number below to securely verify its
+              authenticity.
             </p>
           </div>
 
@@ -96,11 +95,21 @@ export default function Home() {
 
             <button
               type="submit"
-              className="w-full bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700 text-white font-medium py-3 sm:py-4 px-6 rounded-xl sm:rounded-2xl transition-all duration-300 transform active:scale-[0.98] shadow-lg shadow-blue-900/20 cursor-pointer text-base sm:text-lg flex justify-center items-center gap-2 group border border-blue-500/20"
+              className="w-full bg-linear-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700 text-white font-medium py-3 sm:py-4 px-6 rounded-xl sm:rounded-2xl transition-all duration-300 transform active:scale-[0.98] shadow-lg shadow-blue-900/20 cursor-pointer text-base sm:text-lg flex justify-center items-center gap-2 group border border-blue-500/20"
             >
               Verify Credential
-              <svg className="w-5 h-5 text-white/70 group-hover:text-white transition-colors group-hover:translate-x-1 duration-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 5l7 7m0 0l-7 7m7-7H3" />
+              <svg
+                className="w-5 h-5 text-white/70 group-hover:text-white transition-colors group-hover:translate-x-1 duration-300"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M14 5l7 7m0 0l-7 7m7-7H3"
+                />
               </svg>
             </button>
           </form>
